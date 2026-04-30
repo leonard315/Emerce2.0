@@ -110,8 +110,9 @@ service cloud.firestore {
 
     match /all_alerts/{alertId} {
       allow create: if isSignedIn();
-      allow read, list: if isAdmin() || isAnyAgency();
-      // Agencies update status; admin can do anything
+      // Any signed-in user can read all_alerts (needed for live map and user history)
+      allow get, list: if isSignedIn();
+      // Only agencies and admin can update status
       allow update: if isAdmin() || isAnyAgency();
       allow delete: if isAdmin();
     }

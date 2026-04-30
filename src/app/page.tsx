@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,12 +14,13 @@ import {
   ClipboardList,
   User,
 } from 'lucide-react';
+import { SignInRequiredModal } from '@/components/SignInRequiredModal';
 
 // ─── Emergency button data ────────────────────────────────────────────────────
 
 const emergencyTypes = [
   {
-    id: 'fire',
+    id: 'fire' as const,
     label: 'FIRE',
     subtitle: 'BFP',
     icon: Flame,
@@ -27,7 +29,7 @@ const emergencyTypes = [
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
-    id: 'police',
+    id: 'police' as const,
     label: 'POLICE',
     subtitle: 'PNP',
     icon: ShieldCheck,
@@ -36,7 +38,7 @@ const emergencyTypes = [
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
-    id: 'medical',
+    id: 'medical' as const,
     label: 'MEDICAL',
     subtitle: 'EMS',
     icon: Heart,
@@ -45,7 +47,7 @@ const emergencyTypes = [
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
-    id: 'all',
+    id: 'all' as const,
     label: 'ALL AGENCIES',
     subtitle: 'BFP + PNP + EMS',
     icon: TriangleAlert,
@@ -68,9 +70,17 @@ const bottomNavItems = [
 
 export default function Home() {
   const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<'fire' | 'crime' | 'medical' | 'all' | null>(null);
 
-  const handleEmergency = () => {
-    router.push('/auth');
+  const handleEmergencyTap = (type: 'fire' | 'crime' | 'medical' | 'all') => {
+    setSelectedType(type);
+    setModalOpen(true);
+  };
+
+  const handleSosPress = () => {
+    setSelectedType('all');
+    setModalOpen(true);
   };
 
   return (
@@ -153,7 +163,7 @@ export default function Home() {
           {emergencyTypes.map(({ id, label, subtitle, icon: Icon, bg, shadow, hover }) => (
             <button
               key={id}
-              onClick={handleEmergency}
+              onClick={() => handleEmergencyTap(id)}
               aria-label={`Report ${label} emergency`}
               className={`
                 group relative flex flex-col items-center justify-center gap-3
@@ -226,7 +236,7 @@ export default function Home() {
             {/* The button sits above the nav bar */}
             <div className="absolute bottom-[calc(100%-12px)] flex flex-col items-center">
               <button
-                onClick={handleEmergency}
+                onClick={handleSosPress}
                 aria-label="SOS — report emergency"
                 className="flex items-center justify-center w-[58px] h-[58px] rounded-full bg-red-600 shadow-[0_0_24px_6px_rgba(220,38,38,0.5)] hover:bg-red-500 active:scale-95 transition-all duration-150"
               >
@@ -256,6 +266,13 @@ export default function Home() {
 
         </div>
       </nav>
+
+      {/* Sign In Required Modal */}
+      <SignInRequiredModal
+        open={modalOpen}
+        emergencyType={selectedType}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }

@@ -463,6 +463,54 @@ export function UserDashboard() {
             </div>
           )}
 
+          {currentView === "feedback" && (
+            <div className="space-y-8 max-w-2xl">
+              <h1 className="text-3xl font-black text-white tracking-tight">Feedback & Evaluation</h1>
+              <Card className="bg-slate-900/40 border-white/5 rounded-2xl p-8">
+                <div className="mb-6">
+                  <h2 className="text-lg font-bold text-white">System Evaluation</h2>
+                  <p className="text-sm text-slate-400 mt-1">Help us improve the Emergency Hotline system</p>
+                </div>
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ease of Use (1–5)</Label>
+                    <Slider value={easeOfUse} onValueChange={setEaseOfUse} max={5} min={1} step={1} className="py-2" />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>1 - Very Difficult</span>
+                      <span className="text-white font-bold">{easeOfUse[0]}/5</span>
+                      <span>5 - Very Easy</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Reliability (1–5)</Label>
+                    <Slider value={reliability} onValueChange={setReliability} max={5} min={1} step={1} className="py-2" />
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>1 - Unreliable</span>
+                      <span className="text-white font-bold">{reliability[0]}/5</span>
+                      <span>5 - Very Reliable</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Comments (Optional)</Label>
+                    <Textarea
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      placeholder="Share your experience or suggestions..."
+                      className="bg-slate-800/50 border-white/10 text-white rounded-xl h-32 resize-none"
+                    />
+                  </div>
+                  <button
+                    onClick={submitFeedback}
+                    className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-all shadow-[0_4px_16px_rgba(220,38,38,0.4)] flex items-center justify-center gap-2"
+                  >
+                    <Star className="h-4 w-4" />
+                    Submit Feedback
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
+
           <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <AlertDialogContent className="bg-slate-950 border-destructive/30 border-4 rounded-[4rem] p-16 max-w-2xl shadow-[0_0_100px_rgba(220,38,38,0.3)]">
               <AlertDialogHeader className="space-y-8">

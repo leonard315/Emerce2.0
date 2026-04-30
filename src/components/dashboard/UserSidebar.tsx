@@ -9,7 +9,8 @@ import {
   TriangleAlert,
   LogOut,
   Settings,
-  Bell
+  Bell,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { signOut } from 'firebase/auth';
@@ -52,6 +53,7 @@ export function UserSidebar({ currentView, onViewChange }: UserSidebarProps) {
     { title: "Home", view: "home", icon: Home },
     { title: "My Reports", view: "reports", icon: ClipboardList },
     { title: "Live Map", view: "map", icon: Map, href: "/map" },
+    { title: "Feedback", view: "feedback", icon: Star },
     { title: "My Profile", view: "profile", icon: UserCircle },
   ];
 

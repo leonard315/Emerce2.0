@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useAuth } from '@/hooks/use-auth';
 import { EmergencyAlert, EmergencyType } from '@/lib/types';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,8 @@ const markerColors: Record<string, string> = {
 
 export function LiveMapView() {
   const db = useFirestore();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [mapStyle, setMapStyle] = useState<MapStyle>('street');
@@ -68,9 +72,15 @@ export function LiveMapView() {
   useEffect(() => {
     setMounted(true);
     import('leaflet/dist/leaflet.css');
-    // Get user's GPS location
     getUserLocation();
   }, []);
+
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth');
+    }
+  }, [user, authLoading, router]);
 
   const getUserLocation = () => {
     if (!navigator.geolocation) {
@@ -131,6 +141,15 @@ export function LiveMapView() {
 
   // Default center: Philippines
   const defaultCenter: [number, number] = userLocation ?? [12.8797, 121.7740];
+
+  // Show loading while checking auth
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#020617]">
+        <div className="h-8 w-8 rounded-full border-2 border-red-500/30 border-t-red-500 animate-spin" />
+      </div>
+    );
+  }
 
   if (!mounted) return null;
 

@@ -23,24 +23,36 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { signOut } from 'firebase/auth';
+import { useAuth as useFirebaseAuth } from '@/firebase';
+import { clearLoginTimestamp } from '@/firebase';
+import { useRouter } from 'next/navigation';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardHeader } from "./DashboardHeader";
 import { UserSidebar } from "./UserSidebar";
-import dynamic from 'next/dynamic';
 
-const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
+import dynamic from 'next/dynamic';
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false });
 const Circle = dynamic(() => import('react-leaflet').then(m => m.Circle), { ssr: false });
 
+const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContainer), { ssr: false });
+
 export function UserDashboard() {
   const { profile } = useAuth();
+  const auth = useFirebaseAuth();
+  const router = useRouter();
   const db = useFirestore();
   const rtdb = useDatabase();
   const { toast } = useToast();
-  
+
+  const handleLogout = async () => {
+    clearLoginTimestamp();
+    await signOut(auth);
+    router.push('/auth');
+  };
   const [currentView, setCurrentView] = useState("home");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -224,9 +236,10 @@ export function UserDashboard() {
             </nav>
             <div className="p-4 border-t border-white/5">
               <button
-                onClick={async () => { const { signOut } = await import('firebase/auth'); const { getAuth } = await import('firebase/app'); }}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-semibold"
               >
+                <Navigation className="h-5 w-5 rotate-180" />
                 Logout
               </button>
             </div>

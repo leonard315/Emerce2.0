@@ -27,7 +27,7 @@ export function clearLoginTimestamp(): void {
 
 export function isSessionExpired(): boolean {
   const ts = getLoginTimestamp();
-  if (!ts) return true; // no timestamp = treat as expired
+  if (!ts) return false; // no timestamp = first time with this feature, don't expire
   return Date.now() - ts > SESSION_MAX_MS;
 }
 

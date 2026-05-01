@@ -7,7 +7,7 @@ import { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useAuth as useFirebaseAuth } from '@/firebase';
-import { isSessionExpired, clearLoginTimestamp } from '@/firebase';
+import { isSessionExpired, clearLoginTimestamp, getLoginTimestamp, setLoginTimestamp } from '@/firebase';
 
 interface AuthContextType {
   user: any;
@@ -24,10 +24,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Session expiry check ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) return; // not logged in, nothing to check
+    if (!user) return;
     if (isSessionExpired()) {
+      // Session older than 7 days — sign out
       clearLoginTimestamp();
       signOut(auth).catch(() => {});
+    } else if (!getLoginTimestamp()) {
+      // User was already logged in before this feature — stamp them now
+      setLoginTimestamp();
     }
   }, [user, auth]);
 

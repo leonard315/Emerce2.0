@@ -266,7 +266,8 @@ export function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-8 text-xs border-white/10 text-slate-300 hover:bg-white/5 gap-1.5">
+                  <Button variant="outline" size="sm" className="h-8 text-xs border-white/10 text-slate-300 hover:bg-white/5 gap-1.5"
+                    onClick={() => window.open('/dashboard', '_blank')}>
                     <Users className="h-3.5 w-3.5" /> View as User
                   </Button>
                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs font-bold gap-1.5 px-3 py-1.5">

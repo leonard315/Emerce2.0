@@ -61,13 +61,17 @@ export function FireDashboard() {
   const alerts = alertsData || [];
 
   const { soundEnabled, toggleSound, playNewIncident, playSiren, stopSiren, sirenActive } = useAlertSound();
-  const prevCountRef = useRef(0);
+  const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     const pending = alerts.filter(a => a.status === 'pending').length;
-    if (prevCountRef.current > 0 && pending > prevCountRef.current) playNewIncident('fire');
+    // prevCountRef.current === null means first load — don't sound on initial render
+    if (prevCountRef.current !== null && pending > prevCountRef.current) {
+      playNewIncident('fire');
+      playSiren('fire');
+    }
     prevCountRef.current = pending;
-  }, [alerts, playNewIncident]);
+  }, [alerts, playNewIncident, playSiren]);
 
   const performAIAnalysis = async (alert: EmergencyAlert) => {
     if (!db) return;

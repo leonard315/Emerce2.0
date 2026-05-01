@@ -54,13 +54,16 @@ export function MedicalDashboard() {
   const alerts = alertsData || [];
 
   const { soundEnabled, toggleSound, playNewIncident, playSiren, stopSiren, sirenActive } = useAlertSound();
-  const prevCountRef = useRef(0);
+  const prevCountRef = useRef<number | null>(null);
 
   useEffect(() => {
     const pending = alerts.filter(a => a.status === 'pending').length;
-    if (prevCountRef.current > 0 && pending > prevCountRef.current) playNewIncident('medical');
+    if (prevCountRef.current !== null && pending > prevCountRef.current) {
+      playNewIncident('medical');
+      playSiren('medical');
+    }
     prevCountRef.current = pending;
-  }, [alerts, playNewIncident]);
+  }, [alerts, playNewIncident, playSiren]);
 
   const performAIAnalysis = async (alert: EmergencyAlert) => {
     if (!db) return;

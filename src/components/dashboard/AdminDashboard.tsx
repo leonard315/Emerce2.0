@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import dynamic from 'next/dynamic';
 import {
   Users,
@@ -177,6 +179,10 @@ export function AdminDashboard() {
   const db = useFirestore();
   const [mounted, setMounted] = useState(false);
   const [currentView, setCurrentView] = useState("overview");
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [editRole, setEditRole] = useState<string>('');
+  const [savingRole, setSavingRole] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
@@ -219,6 +225,25 @@ export function AdminDashboard() {
   }, [alerts]);
 
   const activeAlerts = alerts.filter(a => a.location && a.status !== 'resolved');
+
+  const handleViewUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setEditRole(user.role);
+  };
+
+  const handleSaveRole = async () => {
+    if (!selectedUser || !db || editRole === selectedUser.role) return;
+    setSavingRole(true);
+    try {
+      await setDoc(doc(db, 'users', selectedUser.uid), { role: editRole }, { merge: true });
+      toast({ title: 'Role updated', description: `${selectedUser.name} is now ${editRole}` });
+      setSelectedUser(prev => prev ? { ...prev, role: editRole as any } : null);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Update failed', description: e.message });
+    } finally {
+      setSavingRole(false);
+    }
+  };
 
   if (!mounted) return null;
 
@@ -441,7 +466,8 @@ export function AdminDashboard() {
                             <p className="text-xs font-bold text-white truncate">{user.name}</p>
                             <p className="text-[10px] text-slate-500 truncate">{user.email}</p>
                           </div>
-                          <Button variant="ghost" size="sm" className="text-[10px] text-slate-400 h-6 px-2 hover:text-white">
+                          <Button variant="ghost" size="sm" className="text-[10px] text-slate-400 h-6 px-2 hover:text-white"
+                            onClick={() => handleViewUser(user)}>
                             View
                           </Button>
                         </div>
@@ -459,7 +485,7 @@ export function AdminDashboard() {
               <h1 className="text-2xl font-black text-white">Manage Alerts</h1>
               <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden w-full">
                 {/* Mobile card list */}
-                <div className="lg:hidden divide-y divide-white/5">
+                <div className="md:hidden divide-y divide-white/5">
                   {alerts.map((alert) => (
                     <div key={alert.id} className="flex items-center gap-3 px-4 py-3">
                       <div className={cn(
@@ -492,7 +518,7 @@ export function AdminDashboard() {
                   )}
                 </div>
                 {/* Desktop table */}
-                <Table className="w-full hidden lg:table">
+                <Table className="w-full hidden md:table">
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/5 hover:bg-transparent">
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest px-6 w-32">Type</TableHead>
@@ -544,8 +570,8 @@ export function AdminDashboard() {
             <div className="space-y-4 w-full">
               <h1 className="text-2xl font-black text-white">Manage Users</h1>
               <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden w-full">
-                {/* Mobile card list (hidden on lg+) */}
-                <div className="lg:hidden divide-y divide-white/5">
+                {/* Mobile card list (hidden on md+) */}
+                <div className="md:hidden divide-y divide-white/5">
                   {users.map((user) => (
                     <div key={user.uid} className="flex items-center gap-3 px-4 py-3">
                       <div className="h-9 w-9 rounded-xl bg-slate-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
@@ -565,7 +591,8 @@ export function AdminDashboard() {
                           {user.role}
                         </Badge>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7 flex-shrink-0">View</Button>
+                      <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7 flex-shrink-0"
+                        onClick={() => handleViewUser(user)}>View</Button>
                     </div>
                   ))}
                   {users.length === 0 && (
@@ -573,7 +600,7 @@ export function AdminDashboard() {
                   )}
                 </div>
                 {/* Desktop table (hidden on mobile) */}
-                <Table className="w-full hidden lg:table">
+                <Table className="w-full hidden md:table">
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/5 hover:bg-transparent">
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest px-6">Name</TableHead>
@@ -607,7 +634,8 @@ export function AdminDashboard() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right px-6">
-                          <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7">View</Button>
+                          <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7"
+                            onClick={() => handleViewUser(user)}>View</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -741,6 +769,79 @@ export function AdminDashboard() {
 
         </div>
       </SidebarInset>
+
+      {/* ── User Detail Dialog ──────────────────────────────────────────── */}
+      <Dialog open={!!selectedUser} onOpenChange={(open) => { if (!open) setSelectedUser(null); }}>
+        <DialogContent className="bg-slate-950 border-white/10 rounded-2xl max-w-sm w-full p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-white/5">
+            <DialogTitle className="text-white font-black text-lg">User Details</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="px-6 py-5 space-y-5">
+              {/* Avatar + basic info */}
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-slate-700 flex items-center justify-center text-white font-black text-2xl flex-shrink-0 overflow-hidden relative">
+                  {selectedUser.photoURL ? (
+                    <Image src={selectedUser.photoURL} alt={selectedUser.name} fill className="object-cover" />
+                  ) : (
+                    selectedUser.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base font-black text-white truncate">{selectedUser.name}</p>
+                  <p className="text-xs text-slate-400 truncate">{selectedUser.email}</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">
+                    UID: {selectedUser.uid.slice(0, 12)}...
+                  </p>
+                </div>
+              </div>
+
+              <Separator className="bg-white/5" />
+
+              {/* Role editor */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Role</Label>
+                <Select value={editRole} onValueChange={setEditRole}>
+                  <SelectTrigger className="bg-slate-800/50 border-white/10 text-white rounded-xl h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-white/10 rounded-xl">
+                    {['user', 'fire', 'police', 'medical', 'admin'].map(r => (
+                      <SelectItem key={r} value={r} className="text-white capitalize hover:bg-white/5">
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Joined date */}
+              {selectedUser.createdAt?.seconds && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-500">Joined</span>
+                  <span className="text-slate-300 font-semibold">
+                    {format(new Date(selectedUser.createdAt.seconds * 1000), 'MMM d, yyyy')}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="px-6 pb-6 flex gap-3">
+            <Button variant="outline" className="flex-1 border-white/10 text-slate-400 hover:text-white rounded-xl"
+              onClick={() => setSelectedUser(null)}>
+              Close
+            </Button>
+            <Button
+              className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl"
+              onClick={handleSaveRole}
+              disabled={savingRole || editRole === selectedUser?.role}
+            >
+              {savingRole ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Role'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </SidebarProvider>
   );
 }

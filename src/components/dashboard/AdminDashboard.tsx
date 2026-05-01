@@ -51,6 +51,7 @@ import { cn } from '@/lib/utils';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminSettings } from "./AdminSettings";
+import { UserDashboard } from "./UserDashboard";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from 'next/link';
 
@@ -182,6 +183,7 @@ export function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [savingRole, setSavingRole] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -267,7 +269,7 @@ export function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="h-8 text-xs border-white/10 text-slate-300 hover:bg-white/5 gap-1.5"
-                    onClick={() => window.open('/dashboard', '_blank')}>
+                    onClick={() => setDemoMode(true)}>
                     <Users className="h-3.5 w-3.5" /> View as User
                   </Button>
                   <Badge className="bg-green-500/10 text-green-500 border-green-500/20 text-xs font-bold gap-1.5 px-3 py-1.5">
@@ -842,6 +844,29 @@ export function AdminDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── User Demo Mode Overlay ──────────────────────────────────────── */}
+      {demoMode && (
+        <div className="fixed inset-0 z-[100] bg-[#020617] flex flex-col">
+          {/* Demo banner */}
+          <div className="flex items-center justify-between px-4 h-10 bg-purple-600/90 backdrop-blur-sm flex-shrink-0">
+            <div className="flex items-center gap-2 text-white text-xs font-bold">
+              <Users className="h-3.5 w-3.5" />
+              ADMIN PREVIEW — User Dashboard Demo Mode
+            </div>
+            <button
+              onClick={() => setDemoMode(false)}
+              className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-bold transition-colors"
+            >
+              <X className="h-4 w-4" /> Exit Demo
+            </button>
+          </div>
+          {/* User dashboard rendered inside */}
+          <div className="flex-1 overflow-hidden">
+            <UserDashboard />
+          </div>
+        </div>
+      )}
 
     </SidebarProvider>
   );

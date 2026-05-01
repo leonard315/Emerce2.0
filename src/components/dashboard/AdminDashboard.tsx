@@ -384,27 +384,29 @@ export function AdminDashboard() {
                       </Link>
                     </CardHeader>
                     <CardContent className="p-0 h-[280px]">
-                      <MapContainer
-                        center={[12.8797, 121.7740]}
-                        zoom={7}
-                        style={{ height: '100%', width: '100%' }}
-                        zoomControl={false}
-                        scrollWheelZoom={false}
-                      >
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                        {activeAlerts.map(alert => (
-                          alert.location && (
-                            <Marker key={alert.id} position={[alert.location.lat, alert.location.lng]}>
-                              <Popup>
-                                <div className="text-xs">
-                                  <p className="font-bold">{alert.type.toUpperCase()}</p>
-                                  <p>{alert.userName}</p>
-                                </div>
-                              </Popup>
-                            </Marker>
-                          )
-                        ))}
-                      </MapContainer>
+                      {mounted && (
+                        <MapContainer
+                          center={[12.8797, 121.7740]}
+                          zoom={7}
+                          style={{ height: '100%', width: '100%' }}
+                          zoomControl={false}
+                          scrollWheelZoom={false}
+                        >
+                          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                          {activeAlerts.map(alert => (
+                            alert.location && (
+                              <Marker key={alert.id} position={[alert.location.lat, alert.location.lng]}>
+                                <Popup>
+                                  <div className="text-xs">
+                                    <p className="font-bold">{alert.type.toUpperCase()}</p>
+                                    <p>{alert.userName}</p>
+                                  </div>
+                                </Popup>
+                              </Marker>
+                            )
+                          ))}
+                        </MapContainer>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

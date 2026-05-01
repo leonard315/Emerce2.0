@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { UserSidebar } from "./UserSidebar";
 import dynamic from 'next/dynamic';
 
@@ -175,17 +175,18 @@ export function UserDashboard() {
   return (
     <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <UserSidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#020617] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
-        <div className="space-y-8 w-full p-4 lg:p-8 pb-20 animate-in fade-in duration-700">
+      <SidebarInset className="bg-[#020617] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1 w-0">
+        <div className="space-y-8 w-full p-4 md:p-6 lg:p-8 pb-20 animate-in fade-in duration-700">
           
           {currentView === "home" && (
             <>
-              <div className="flex items-center gap-4 bg-slate-900/40 p-8 rounded-[2.5rem] border border-white/5 mb-10 shadow-2xl">
-                <div className="bg-slate-800/80 p-4 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-4 bg-slate-900/40 p-6 md:p-8 rounded-[2.5rem] border border-white/5 mb-10 shadow-2xl">
+                <SidebarTrigger className="bg-slate-800/80 p-3 rounded-2xl border border-white/10 text-slate-400 hover:text-white hover:bg-slate-700/80 transition-colors md:hidden flex-shrink-0" />
+                <div className="hidden md:flex bg-slate-800/80 p-4 rounded-2xl border border-white/10 flex-shrink-0">
                   <Menu className="h-8 w-8 text-slate-400" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">Hi, {profile?.name} 👋</h1>
+                  <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">Hi, {profile?.name} 👋</h1>
                   <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-1">Tap an emergency button to report instantly</p>
                 </div>
               </div>
@@ -196,7 +197,7 @@ export function UserDashboard() {
                   <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Select Emergency Type</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {emergencyButtons.map((btn) => (
                     <Button 
                       key={btn.type} 
@@ -213,15 +214,15 @@ export function UserDashboard() {
                       }} 
                       disabled={isSubmitting} 
                       className={cn(
-                        "h-[280px] rounded-[3rem] flex flex-col items-center justify-center gap-6 transition-all active:scale-95 relative overflow-hidden",
+                        "h-[220px] md:h-[250px] lg:h-[280px] rounded-[3rem] flex flex-col items-center justify-center gap-6 transition-all active:scale-95 relative overflow-hidden",
                         btn.color,
                         "hover:brightness-110 shadow-2xl border-none"
                       )}
                     >
-                      <div className="space-y-6 text-center">
-                        <btn.icon className="h-16 w-16 mx-auto text-white" />
+                      <div className="space-y-4 text-center">
+                        <btn.icon className="h-14 w-14 mx-auto text-white" />
                         <div className="space-y-2">
-                          <span className="text-3xl font-black block text-white tracking-[0.1em] italic leading-none">{btn.title}</span>
+                          <span className="text-2xl md:text-3xl font-black block text-white tracking-[0.1em] italic leading-none">{btn.title}</span>
                           <span className="text-[10px] font-black block text-white/70 uppercase tracking-[0.2em]">{btn.subtitle}</span>
                         </div>
                       </div>

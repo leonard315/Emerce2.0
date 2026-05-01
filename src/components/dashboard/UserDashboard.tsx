@@ -24,7 +24,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { UserSidebar } from "./UserSidebar";
 import dynamic from 'next/dynamic';
 
@@ -181,8 +181,7 @@ export function UserDashboard() {
           {currentView === "home" && (
             <>
               <div className="flex items-center gap-4 bg-slate-900/40 p-6 md:p-8 rounded-[2.5rem] border border-white/5 mb-10 shadow-2xl">
-                <SidebarTrigger className="bg-slate-800/80 p-3 rounded-2xl border border-white/10 text-slate-400 hover:text-white hover:bg-slate-700/80 transition-colors md:hidden flex-shrink-0" />
-                <div className="hidden md:flex bg-slate-800/80 p-4 rounded-2xl border border-white/10 flex-shrink-0">
+                <div className="bg-slate-800/80 p-4 rounded-2xl border border-white/10 flex-shrink-0">
                   <Menu className="h-8 w-8 text-slate-400" />
                 </div>
                 <div>

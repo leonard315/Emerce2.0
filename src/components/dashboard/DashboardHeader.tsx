@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function DashboardHeader() {
   const router = useRouter();
@@ -71,20 +72,26 @@ export function DashboardHeader() {
 
   return (
     <header className="h-16 border-b border-white/5 bg-[#020617]/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10 sticky top-0 z-50">
-      {/* Brand */}
-      <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-        <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/40">
-            <img src="/icons/logo.png" alt="Logo" className="w-full h-full object-cover" />
+      {/* Left — hamburger (tablet only) + brand */}
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Hamburger — visible on tablet, hidden on desktop where sidebar is always open */}
+        <SidebarTrigger className="xl:hidden flex-shrink-0 h-9 w-9 rounded-xl border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" />
+
+        {/* Brand */}
+        <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/40">
+              <img src="/icons/logo.png" alt="Logo" className="w-full h-full object-cover" />
+            </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold leading-tight tracking-tight text-white truncate">
+              Emergency Hotline
+            </p>
+            <p className="hidden sm:block text-[10px] text-slate-500 leading-tight tracking-wide truncate">
+              Smart Multi-Emergency Alarm System
+            </p>
           </div>
-        <div className="min-w-0">
-          <p className="text-sm font-bold leading-tight tracking-tight text-white truncate">
-            Emergency Hotline
-          </p>
-          <p className="hidden sm:block text-[10px] text-slate-500 leading-tight tracking-wide truncate">
-            Smart Multi-Emergency Alarm System
-          </p>
-        </div>
-      </Link>
+        </Link>
+      </div>
 
       {/* Center status badges — desktop only */}
       <div className="hidden xl:flex items-center gap-4">

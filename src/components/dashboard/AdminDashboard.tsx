@@ -455,7 +455,41 @@ export function AdminDashboard() {
             <div className="space-y-4 w-full">
               <h1 className="text-2xl font-black text-white">Manage Alerts</h1>
               <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden w-full">
-                <Table className="w-full">
+                {/* Mobile card list */}
+                <div className="lg:hidden divide-y divide-white/5">
+                  {alerts.map((alert) => (
+                    <div key={alert.id} className="flex items-center gap-3 px-4 py-3">
+                      <div className={cn(
+                        "h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0",
+                        alert.type === 'fire' ? 'bg-orange-500/15' : alert.type === 'crime' ? 'bg-blue-500/15' : 'bg-red-500/15'
+                      )}>
+                        {alert.type === 'fire' ? <Flame className="h-4 w-4 text-orange-400" /> :
+                         alert.type === 'crime' ? <Shield className="h-4 w-4 text-blue-400" /> :
+                         <Heart className="h-4 w-4 text-red-400" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white capitalize">{alert.type} Emergency</p>
+                        <p className="text-xs text-slate-500 truncate">{alert.userName}</p>
+                        <p className="text-[10px] text-slate-600">
+                          {alert.timestamp?.seconds ? format(alert.timestamp.toDate(), 'MMM d, HH:mm') : 'Live'}
+                        </p>
+                      </div>
+                      <Badge className={cn(
+                        "text-[9px] font-bold border-none rounded-lg px-2 py-0.5 flex-shrink-0",
+                        alert.status === 'resolved' ? 'bg-green-500/10 text-green-400' :
+                        alert.status === 'responding' ? 'bg-blue-500/10 text-blue-400' :
+                        'bg-red-500/10 text-red-400'
+                      )}>
+                        {alert.status}
+                      </Badge>
+                    </div>
+                  ))}
+                  {alerts.length === 0 && (
+                    <div className="py-12 text-center text-slate-500 text-sm">No alerts found</div>
+                  )}
+                </div>
+                {/* Desktop table */}
+                <Table className="w-full hidden lg:table">
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/5 hover:bg-transparent">
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest px-6 w-32">Type</TableHead>
@@ -507,7 +541,36 @@ export function AdminDashboard() {
             <div className="space-y-4 w-full">
               <h1 className="text-2xl font-black text-white">Manage Users</h1>
               <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden w-full">
-                <Table className="w-full">
+                {/* Mobile card list (hidden on lg+) */}
+                <div className="lg:hidden divide-y divide-white/5">
+                  {users.map((user) => (
+                    <div key={user.uid} className="flex items-center gap-3 px-4 py-3">
+                      <div className="h-9 w-9 rounded-xl bg-slate-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                        <Badge className={cn(
+                          "text-[10px] font-bold border-none rounded-lg capitalize mt-1",
+                          user.role === 'admin' ? 'bg-purple-500/10 text-purple-400' :
+                          user.role === 'fire' ? 'bg-orange-500/10 text-orange-400' :
+                          user.role === 'police' ? 'bg-blue-500/10 text-blue-400' :
+                          user.role === 'medical' ? 'bg-red-500/10 text-red-400' :
+                          'bg-slate-500/10 text-slate-400'
+                        )}>
+                          {user.role}
+                        </Badge>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7 flex-shrink-0">View</Button>
+                    </div>
+                  ))}
+                  {users.length === 0 && (
+                    <div className="py-12 text-center text-slate-500 text-sm">No users found</div>
+                  )}
+                </div>
+                {/* Desktop table (hidden on mobile) */}
+                <Table className="w-full hidden lg:table">
                   <TableHeader className="bg-white/5">
                     <TableRow className="border-white/5 hover:bg-transparent">
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest px-6">Name</TableHead>

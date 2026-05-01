@@ -473,6 +473,13 @@ export function UserDashboard() {
                     <Button className="w-full h-12 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl">
                       Update Profile
                     </Button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full h-12 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Navigation className="h-4 w-4 rotate-180" />
+                      Logout
+                    </button>
                   </div>
                 </div>
               </Card>

@@ -850,15 +850,17 @@ export function AdminDashboard() {
         <div className="fixed inset-0 z-[100] bg-[#020617] flex flex-col">
           {/* Demo banner */}
           <div className="flex items-center justify-between px-4 h-10 bg-purple-600/90 backdrop-blur-sm flex-shrink-0">
-            <div className="flex items-center gap-2 text-white text-xs font-bold">
-              <Users className="h-3.5 w-3.5" />
-              ADMIN PREVIEW — User Dashboard Demo Mode
+            <div className="flex items-center gap-2 text-white text-xs font-bold min-w-0">
+              <Users className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate hidden sm:block">ADMIN PREVIEW — User Dashboard Demo Mode</span>
+              <span className="truncate sm:hidden">Demo Mode</span>
             </div>
             <button
               onClick={() => setDemoMode(false)}
-              className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-bold transition-colors"
+              className="flex items-center gap-1.5 text-white/80 hover:text-white text-xs font-bold transition-colors flex-shrink-0 ml-2"
             >
-              <X className="h-4 w-4" /> Exit Demo
+              <X className="h-4 w-4" />
+              <span className="hidden sm:inline">Exit Demo</span>
             </button>
           </div>
           {/* User dashboard rendered inside */}

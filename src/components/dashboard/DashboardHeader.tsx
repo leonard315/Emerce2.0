@@ -19,10 +19,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 
-export function DashboardHeader() {
-  const router = useRouter();
+interface DashboardHeaderProps {
+  sidebarTrigger?: React.ReactNode;
+}
+
+export function DashboardHeader({ sidebarTrigger }: DashboardHeaderProps = {}) {
   const auth = useFirebaseHooks();
   const rtdb = useDatabase();
   const { profile, user } = useAuth();
@@ -72,11 +74,11 @@ export function DashboardHeader() {
 
   return (
     <header className="h-16 border-b border-white/5 bg-[#020617]/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10 sticky top-0 z-50">
-      {/* Left — hamburger (tablet only) + brand */}
+      {/* Left — optional sidebar trigger (tablet) + brand */}
       <div className="flex items-center gap-3 min-w-0">
-        {/* Hamburger — visible on tablet, hidden on desktop where sidebar is always open */}
-        <SidebarTrigger className="xl:hidden flex-shrink-0 h-9 w-9 rounded-xl border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" />
-
+        {sidebarTrigger && (
+          <div className="xl:hidden flex-shrink-0">{sidebarTrigger}</div>
+        )}
         {/* Brand */}
         <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
           <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/40">

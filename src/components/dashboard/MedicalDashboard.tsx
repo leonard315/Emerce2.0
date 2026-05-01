@@ -12,12 +12,13 @@ import { HeartPulse, CheckCircle2, Navigation, MapPin, Zap, BrainCircuit, Radio,
 import { format } from 'date-fns';
 import { analyzeSituation } from '@/ai/flows/analyze-situation-flow';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AgencySidebar } from "./AgencySidebar";
 import { AgencyProfileView } from "./AgencyProfileView";
 import { AlertSoundButton } from "./AlertSoundButton";
 import { useAlertSound } from "@/hooks/use-alert-sound";
 import { SectorVectorGrid } from "./SectorVectorGrid";
+import { DashboardHeader } from "./DashboardHeader";
 import Link from 'next/link';
 
 function StatusBadge({ status }: { status: string }) {

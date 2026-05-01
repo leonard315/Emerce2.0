@@ -24,7 +24,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { DashboardHeader } from "./DashboardHeader";
 import { UserSidebar } from "./UserSidebar";
 import dynamic from 'next/dynamic';
 
@@ -173,10 +174,287 @@ export function UserDashboard() {
   const satelliteMapImg = PlaceHolderImages.find(img => img.id === 'satellite-map')?.imageUrl;
 
   return (
-    <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
-      <UserSidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#020617] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1 w-0">
-        <div className="space-y-8 w-full p-4 md:p-6 lg:p-8 pb-20 animate-in fade-in duration-700">
+    <>
+      {/* ── MOBILE layout (hidden on md+) ─────────────────────────────────── */}
+      <div className="md:hidden flex flex-col h-screen bg-[#020617]">
+        {/* Mobile top navbar */}
+        <header className="h-14 flex items-center justify-between px-4 border-b border-white/5 bg-[#020617]/90 backdrop-blur-xl sticky top-0 z-50 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentView(currentView === '__menu__' ? 'home' : '__menu__')}
+              className="h-9 w-9 rounded-xl border border-white/10 bg-slate-900/60 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <img src="/icons/logo.png" alt="Logo" className="w-7 h-7 rounded-lg object-cover" />
+              <span className="text-sm font-bold text-white">Emergency Hotline</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-400">{profile?.name}</span>
+            <img
+              src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`}
+              alt="avatar"
+              className="h-8 w-8 rounded-xl object-cover border border-white/10"
+            />
+          </div>
+        </header>
+
+        {/* Mobile slide-out menu */}
+        {currentView === '__menu__' && (
+          <div className="absolute inset-0 z-40 bg-[#020617] pt-14 flex flex-col">
+            <nav className="flex-1 p-4 space-y-1">
+              {[
+                { view: 'home', label: 'Home', icon: Menu },
+                { view: 'reports', label: 'My Reports', icon: ClipboardList },
+                { view: 'map', label: 'Live Map', icon: MapPin },
+                { view: 'feedback', label: 'Feedback', icon: Star },
+                { view: 'profile', label: 'My Profile', icon: Navigation },
+              ].map(item => (
+                <button
+                  key={item.view}
+                  onClick={() => setCurrentView(item.view)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors text-sm font-semibold"
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="p-4 border-t border-white/5">
+              <button
+                onClick={async () => { const { signOut } = await import('firebase/auth'); const { getAuth } = await import('firebase/app'); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors text-sm font-semibold"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile content */}
+        <div className="flex-1 overflow-y-auto pb-24 px-4 pt-4 space-y-4">
+          {currentView === 'home' && (
+            <>
+              {/* Welcome */}
+              <div className="bg-slate-900/60 rounded-2xl p-4 border border-white/5">
+                <h1 className="text-xl font-black text-white">Hi, {profile?.name} 👋</h1>
+                <p className="text-xs text-slate-500 mt-0.5 uppercase tracking-widest">Tap an emergency button to report instantly</p>
+              </div>
+
+              {/* Emergency type label */}
+              <div className="flex items-center gap-2 px-1">
+                <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Select Emergency Type</span>
+              </div>
+
+              {/* 2x2 grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {emergencyButtons.map((btn) => (
+                  <button
+                    key={btn.type}
+                    onClick={() => {
+                      setSelectedType(btn.type);
+                      setConfirmOpen(true);
+                      setGpsStatus('acquiring');
+                      navigator.geolocation?.getCurrentPosition(
+                        pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); },
+                        () => setGpsStatus('denied'),
+                        { timeout: 8000, enableHighAccuracy: true }
+                      );
+                    }}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "h-40 rounded-3xl flex flex-col items-center justify-center gap-3 transition-all active:scale-95",
+                      btn.color, "shadow-xl border-none"
+                    )}
+                  >
+                    <btn.icon className="h-10 w-10 text-white" />
+                    <div className="text-center">
+                      <span className="text-base font-black block text-white tracking-wide italic">{btn.title}</span>
+                      <span className="text-[9px] font-bold block text-white/70 uppercase tracking-wider">{btn.subtitle}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Recent reports */}
+              <div className="bg-slate-900/60 rounded-2xl border border-white/5 overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                  <span className="text-sm font-bold text-white">My Recent Reports</span>
+                  <button onClick={() => setCurrentView('reports')} className="text-xs text-red-400 font-bold">View all →</button>
+                </div>
+                {alerts.slice(0, 3).map(alert => (
+                  <div key={alert.id} className="flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-0">
+                    <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0",
+                      alert.type === 'fire' ? 'bg-orange-500/20' : alert.type === 'crime' ? 'bg-blue-500/20' : 'bg-red-500/20'
+                    )}>
+                      {alert.type === 'fire' ? <Flame className="h-4 w-4 text-orange-400" /> :
+                       alert.type === 'crime' ? <Shield className="h-4 w-4 text-blue-400" /> :
+                       <Activity className="h-4 w-4 text-red-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white capitalize">{alert.type} Emergency</p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'No GPS'} · {alert.timestamp?.seconds ? format(alert.timestamp.toDate(), 'MMM d') : ''}
+                      </p>
+                    </div>
+                    <Badge className={cn("text-[10px] font-bold border-none flex-shrink-0",
+                      alert.status === 'pending' ? 'bg-red-500/10 text-red-400' :
+                      alert.status === 'responding' ? 'bg-blue-500/10 text-blue-400' :
+                      'bg-green-500/10 text-green-400'
+                    )}>{alert.status}</Badge>
+                  </div>
+                ))}
+                {alerts.length === 0 && (
+                  <div className="px-4 py-6 text-center text-slate-500 text-xs">No reports yet</div>
+                )}
+              </div>
+            </>
+          )}
+
+          {currentView === 'reports' && (
+            <div className="space-y-4">
+              <h1 className="text-xl font-black text-white">My Reports</h1>
+              <div className="bg-slate-900/60 rounded-2xl border border-white/5 overflow-hidden">
+                {alerts.length === 0 ? (
+                  <div className="py-12 text-center text-slate-500 text-sm">No reports yet</div>
+                ) : alerts.map(alert => (
+                  <div key={alert.id} className="flex items-center gap-3 px-4 py-3 border-b border-white/5 last:border-0">
+                    <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0",
+                      alert.type === 'fire' ? 'bg-orange-500/20' : alert.type === 'crime' ? 'bg-blue-500/20' : 'bg-red-500/20'
+                    )}>
+                      {alert.type === 'fire' ? <Flame className="h-4 w-4 text-orange-400" /> :
+                       alert.type === 'crime' ? <Shield className="h-4 w-4 text-blue-400" /> :
+                       <Activity className="h-4 w-4 text-red-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white capitalize">{alert.type} Emergency</p>
+                      <p className="text-xs text-slate-500 truncate">
+                        {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'No GPS'} · {alert.timestamp?.seconds ? format(alert.timestamp.toDate(), 'MMM d, h:mm a') : ''}
+                      </p>
+                      {alert.responderName && <p className="text-xs text-blue-400 font-semibold">Responder: {alert.responderName}</p>}
+                    </div>
+                    <Badge className={cn("text-[10px] font-bold border-none flex-shrink-0",
+                      alert.status === 'pending' ? 'bg-red-500/10 text-red-400' :
+                      alert.status === 'responding' ? 'bg-blue-500/10 text-blue-400' :
+                      'bg-green-500/10 text-green-400'
+                    )}>{alert.status}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {currentView === 'map' && (
+            <div className="space-y-4">
+              <h1 className="text-xl font-black text-white">Live Map</h1>
+              <Card className="bg-[#020617] border-white/5 rounded-2xl overflow-hidden h-[400px]">
+                {mapMounted && (
+                  <MapContainer center={userLocation ?? [12.8797, 121.7740]} zoom={userLocation ? 15 : 7} style={{ height: '100%', width: '100%' }} key={userLocation ? `${userLocation[0]}-${userLocation[1]}` : 'default'}>
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    {userLocation && (
+                      <>
+                        <Circle center={userLocation} radius={100} pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2 }} />
+                        <Marker position={userLocation}><Popup><p className="text-xs font-bold">📍 Your Location</p></Popup></Marker>
+                      </>
+                    )}
+                  </MapContainer>
+                )}
+              </Card>
+            </div>
+          )}
+
+          {currentView === 'feedback' && (
+            <div className="space-y-4">
+              <h1 className="text-xl font-black text-white">Feedback</h1>
+              <Card className="bg-slate-900/40 border-white/5 rounded-2xl p-5">
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ease of Use (1–5)</Label>
+                    <Slider value={easeOfUse} onValueChange={setEaseOfUse} max={5} min={1} step={1} />
+                    <p className="text-right text-xs text-white font-bold">{easeOfUse[0]}/5</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Reliability (1–5)</Label>
+                    <Slider value={reliability} onValueChange={setReliability} max={5} min={1} step={1} />
+                    <p className="text-right text-xs text-white font-bold">{reliability[0]}/5</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Comments</Label>
+                    <Textarea value={comments} onChange={e => setComments(e.target.value)} placeholder="Share your experience..." className="bg-slate-800/50 border-white/10 text-white rounded-xl h-28 resize-none" />
+                  </div>
+                  <button onClick={submitFeedback} className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-all flex items-center justify-center gap-2">
+                    <Star className="h-4 w-4" /> Submit Feedback
+                  </button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {currentView === 'profile' && (
+            <div className="space-y-4">
+              <h1 className="text-xl font-black text-white">My Profile</h1>
+              <Card className="bg-slate-900/40 border-white/5 rounded-2xl overflow-hidden">
+                <div className="h-20 bg-gradient-to-r from-slate-800 to-slate-900" />
+                <div className="px-5 pb-5">
+                  <div className="relative -mt-10 mb-4 w-fit">
+                    <div className="h-20 w-20 rounded-2xl overflow-hidden border-4 border-slate-900 bg-slate-800 relative">
+                      <Image src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`} fill alt="Avatar" className="object-cover" />
+                    </div>
+                  </div>
+                  <h2 className="text-lg font-black text-white">{profile?.name}</h2>
+                  <p className="text-sm text-slate-400">{profile?.email}</p>
+                  <Badge className="bg-primary/20 text-primary border-primary/20 text-xs font-bold capitalize mt-2">{profile?.role} sector</Badge>
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile bottom tab bar */}
+        <nav className="fixed bottom-0 inset-x-0 h-16 bg-[#020617]/95 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-2 z-50">
+          {[
+            { view: 'home', label: 'Home', icon: Menu },
+            { view: 'map', label: 'Map', icon: MapPin },
+            { view: 'sos', label: 'SOS', icon: AlertTriangle, isSOS: true },
+            { view: 'reports', label: 'History', icon: ClipboardList },
+            { view: 'profile', label: 'Profile', icon: Navigation },
+          ].map(item => (
+            item.isSOS ? (
+              <button
+                key="sos"
+                onClick={() => { setSelectedType('medical'); setConfirmOpen(true); setGpsStatus('acquiring'); navigator.geolocation?.getCurrentPosition(pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); }, () => setGpsStatus('denied'), { timeout: 8000, enableHighAccuracy: true }); }}
+                className="flex flex-col items-center justify-center -mt-6 h-14 w-14 rounded-full bg-red-600 shadow-[0_0_20px_rgba(220,38,38,0.5)] border-4 border-[#020617]"
+              >
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </button>
+            ) : (
+              <button
+                key={item.view}
+                onClick={() => setCurrentView(item.view)}
+                className={cn("flex flex-col items-center justify-center gap-1 flex-1 py-2 transition-colors",
+                  currentView === item.view ? "text-red-400" : "text-slate-500"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-[10px] font-bold">{item.label}</span>
+              </button>
+            )
+          ))}
+        </nav>
+      </div>
+
+      {/* ── DESKTOP/TABLET layout (hidden on mobile) ──────────────────────── */}
+      <div className="hidden md:block">
+        <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
+          <UserSidebar currentView={currentView} onViewChange={setCurrentView} />
+          <SidebarInset className="bg-[#020617] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1 w-0">
+            <DashboardHeader sidebarTrigger={
+              <SidebarTrigger className="h-9 w-9 rounded-xl border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors" />
+            } />
+            <div className="space-y-8 w-full p-4 md:p-6 lg:p-8 pb-20 animate-in fade-in duration-700">
           
           {currentView === "home" && (
             <>
@@ -810,5 +1088,7 @@ export function UserDashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+      </div>
+    </>
   );
 }

@@ -135,7 +135,6 @@ export function AlertSoundButton({
       <Button
         size="sm"
         onClick={sirenActive ? onStopSiren : onPlaySiren}
-        disabled={!soundEnabled}
         className={cn(
           "h-9 gap-1.5 font-semibold text-xs text-white shadow-lg transition-all",
           sirenActive ? "bg-slate-700 hover:bg-slate-600 animate-pulse" : colors.siren

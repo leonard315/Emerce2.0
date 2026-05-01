@@ -307,24 +307,22 @@ export function useAlertSound(): UseAlertSoundReturn {
   const toggleSound = useCallback(() => {
     setSoundEnabled(prev => {
       const next = !prev;
-      if (prev && sirenActive) stopSiren();
-      // If turning OFF, auto-turn back ON after 2 seconds
-      if (prev) {
-        if (autoOnTimerRef.current) clearTimeout(autoOnTimerRef.current);
-        autoOnTimerRef.current = setTimeout(() => {
-          setSoundEnabled(true);
-          autoOnTimerRef.current = null;
-        }, 2000);
-      } else {
-        // Turning ON manually — cancel any pending auto-on
-        if (autoOnTimerRef.current) {
-          clearTimeout(autoOnTimerRef.current);
-          autoOnTimerRef.current = null;
+      // Turning OFF — stop any active siren immediately
+      if (prev && sirenActive) {
+        if (stopSirenRef.current) {
+          stopSirenRef.current();
+          stopSirenRef.current = null;
         }
+        setSirenActive(false);
+      }
+      // Cancel any pending auto-on timer
+      if (autoOnTimerRef.current) {
+        clearTimeout(autoOnTimerRef.current);
+        autoOnTimerRef.current = null;
       }
       return next;
     });
-  }, [sirenActive, stopSiren]);
+  }, [sirenActive]);
 
   useEffect(() => {
     return () => {

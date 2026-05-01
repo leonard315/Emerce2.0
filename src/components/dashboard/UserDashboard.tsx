@@ -865,7 +865,7 @@ export function UserDashboard() {
           )}
 
           {currentView === "profile" && (
-            <div className="space-y-6 w-full max-w-2xl">
+            <div className="space-y-6 w-full">
               <div>
                 <h1 className="text-2xl font-black text-white tracking-tight">My Profile</h1>
                 <p className="text-xs text-slate-500 mt-0.5">Manage your account information</p>
@@ -875,10 +875,10 @@ export function UserDashboard() {
                 <div className="h-24 bg-gradient-to-r from-slate-800 to-slate-900 relative" />
 
                 {/* Avatar + info */}
-                <div className="px-8 pb-8">
+                <div className="px-5 md:px-8 pb-6 md:pb-8">
                   {/* Avatar with edit button */}
-                  <div className="relative -mt-12 mb-6 w-fit">
-                    <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-slate-900 relative bg-slate-800">
+                  <div className="relative -mt-12 mb-5 w-fit">
+                    <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl overflow-hidden border-4 border-slate-900 relative bg-slate-800">
                       <Image
                         src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`}
                         fill
@@ -917,7 +917,7 @@ export function UserDashboard() {
                     />
                   </div>
 
-                  <div className="space-y-1 mb-6">
+                  <div className="space-y-1 mb-5">
                     <h2 className="text-xl font-black text-white">{profile?.name}</h2>
                     <p className="text-sm text-slate-400">{profile?.email}</p>
                     <Badge className="bg-primary/20 text-primary border-primary/20 text-xs font-bold capitalize mt-1">
@@ -925,14 +925,14 @@ export function UserDashboard() {
                     </Badge>
                   </div>
 
-                  <Separator className="bg-white/5 mb-6" />
+                  <Separator className="bg-white/5 mb-5" />
 
                   <div className="space-y-4">
                     <div>
                       <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
                       <Input
                         defaultValue={profile?.name || ''}
-                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white rounded-xl h-12"
                       />
                     </div>
                     <div>
@@ -940,11 +940,11 @@ export function UserDashboard() {
                       <Input
                         defaultValue={profile?.email || ''}
                         type="email"
-                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white rounded-xl h-12"
                         disabled
                       />
                     </div>
-                    <Button className="w-full h-11 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl">
+                    <Button className="w-full h-12 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl">
                       Update Profile
                     </Button>
                   </div>

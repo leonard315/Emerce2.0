@@ -408,18 +408,72 @@ export function UserDashboard() {
 
           {currentView === 'profile' && (
             <div className="space-y-4">
-              <h1 className="text-xl font-black text-white">My Profile</h1>
+              <div>
+                <h1 className="text-xl font-black text-white">My Profile</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Manage your account information</p>
+              </div>
               <Card className="bg-slate-900/40 border-white/5 rounded-2xl overflow-hidden">
-                <div className="h-20 bg-gradient-to-r from-slate-800 to-slate-900" />
+                <div className="h-20 bg-gradient-to-r from-slate-800 to-slate-900 relative" />
                 <div className="px-5 pb-5">
+                  {/* Avatar with camera upload */}
                   <div className="relative -mt-10 mb-4 w-fit">
                     <div className="h-20 w-20 rounded-2xl overflow-hidden border-4 border-slate-900 bg-slate-800 relative">
                       <Image src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`} fill alt="Avatar" className="object-cover" />
                     </div>
+                    <label
+                      htmlFor="mobile-avatar-upload"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-xl bg-red-600 hover:bg-red-500 flex items-center justify-center cursor-pointer shadow-lg transition-colors"
+                      title="Change photo"
+                    >
+                      <Camera className="h-4 w-4 text-white" />
+                    </label>
+                    <input
+                      id="mobile-avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !profile || !db) return;
+                        try {
+                          const { resizeImageToBase64 } = await import('@/lib/resize-image');
+                          const dataUrl = await resizeImageToBase64(file, 200, 0.7);
+                          await setDoc(doc(db, 'users', profile.uid), { photoURL: dataUrl }, { merge: true });
+                          toast({ title: 'Profile photo updated' });
+                        } catch (e: any) {
+                          toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
+                        }
+                      }}
+                    />
                   </div>
+
                   <h2 className="text-lg font-black text-white">{profile?.name}</h2>
                   <p className="text-sm text-slate-400">{profile?.email}</p>
                   <Badge className="bg-primary/20 text-primary border-primary/20 text-xs font-bold capitalize mt-2">{profile?.role} sector</Badge>
+
+                  <Separator className="bg-white/5 my-5" />
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
+                      <Input
+                        defaultValue={profile?.name || ''}
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white rounded-xl h-12"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</Label>
+                      <Input
+                        defaultValue={profile?.email || ''}
+                        type="email"
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white rounded-xl h-12"
+                        disabled
+                      />
+                    </div>
+                    <Button className="w-full h-12 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl">
+                      Update Profile
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </div>

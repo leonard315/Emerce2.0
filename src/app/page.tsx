@@ -24,8 +24,8 @@ const emergencyTypes = [
     label: 'FIRE',
     subtitle: 'BFP',
     icon: Flame,
-    bg: 'bg-[hsl(var(--fire))]',
-    shadow: 'shadow-[0_8px_32px_rgba(251,146,60,0.35)]',
+    bg: 'bg-gradient-to-br from-orange-500 to-orange-700',
+    shadow: 'shadow-[0_8px_40px_rgba(249,115,22,0.5)]',
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
@@ -33,8 +33,8 @@ const emergencyTypes = [
     label: 'POLICE',
     subtitle: 'PNP',
     icon: ShieldCheck,
-    bg: 'bg-[hsl(var(--crime))]',
-    shadow: 'shadow-[0_8px_32px_rgba(59,130,246,0.35)]',
+    bg: 'bg-gradient-to-br from-blue-500 to-blue-700',
+    shadow: 'shadow-[0_8px_40px_rgba(59,130,246,0.5)]',
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
@@ -42,8 +42,8 @@ const emergencyTypes = [
     label: 'MEDICAL',
     subtitle: 'EMS',
     icon: Heart,
-    bg: 'bg-[hsl(var(--medical))]',
-    shadow: 'shadow-[0_8px_32px_rgba(244,63,94,0.35)]',
+    bg: 'bg-gradient-to-br from-rose-500 to-red-700',
+    shadow: 'shadow-[0_8px_40px_rgba(244,63,94,0.5)]',
     hover: 'hover:brightness-110 hover:scale-[1.03]',
   },
   {
@@ -51,8 +51,8 @@ const emergencyTypes = [
     label: 'ALL AGENCIES',
     subtitle: 'BFP + PNP + EMS',
     icon: TriangleAlert,
-    bg: 'bg-slate-700',
-    shadow: 'shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+    bg: 'bg-gradient-to-br from-slate-600 to-slate-800',
+    shadow: 'shadow-[0_8px_40px_rgba(100,116,139,0.35)]',
     hover: 'hover:brightness-125 hover:scale-[1.03]',
   },
 ] as const;
@@ -73,8 +73,10 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'fire' | 'crime' | 'medical' | 'all' | null>(null);
 
-  const handleEmergencyTap = (type: 'fire' | 'crime' | 'medical' | 'all') => {
-    setSelectedType(type);
+  const handleEmergencyTap = (type: 'fire' | 'police' | 'medical' | 'all') => {
+    // Map 'police' to 'crime' for the modal config
+    const mappedType = type === 'police' ? 'crime' : type;
+    setSelectedType(mappedType);
     setModalOpen(true);
   };
 
@@ -84,23 +86,23 @@ export default function Home() {
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Vignette / radial glow */}
+    <div className="relative flex flex-col min-h-screen bg-[#020617] text-foreground overflow-hidden">
+      {/* Background glows */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-0"
         style={{
           background:
-            'radial-gradient(ellipse 80% 60% at 50% 45%, rgba(180,30,30,0.22) 0%, rgba(120,10,10,0.08) 50%, transparent 75%)',
+            'radial-gradient(ellipse 70% 50% at 50% 30%, rgba(220,38,38,0.18) 0%, rgba(120,10,10,0.07) 55%, transparent 80%)',
         }}
       />
 
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
-      <header className="relative z-20 sticky top-0 flex items-center justify-between px-4 sm:px-6 lg:px-10 h-16 border-b border-white/5 bg-background/80 backdrop-blur-xl">
+      <header className="relative z-20 sticky top-0 flex items-center justify-between px-4 sm:px-6 lg:px-10 h-16 border-b border-white/5 bg-[#020617]/80 backdrop-blur-xl">
         {/* Brand */}
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-red-600 shadow-lg shadow-red-900/40">
-            <TriangleAlert className="h-5 w-5 text-white" />
+          <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg overflow-hidden shadow-lg shadow-red-900/40">
+            <img src="/icons/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <div className="min-w-0">
             <p className="text-base font-bold leading-tight tracking-tight truncate">
@@ -198,9 +200,9 @@ export default function Home() {
       </main>
 
       {/* ── Desktop footer (hidden on mobile/tablet, shown on xl+) ──────────── */}
-      <footer className="relative z-10 hidden xl:flex items-center justify-between px-6 lg:px-10 py-4 border-t border-white/5 bg-background/60 backdrop-blur-sm text-[11px] text-muted-foreground">
+      <footer className="relative z-10 hidden xl:flex items-center justify-between px-6 lg:px-10 py-4 border-t border-white/5 bg-[#020617]/60 backdrop-blur-sm text-[11px] text-muted-foreground">
         <span>Emergency Hotline — Smart Multi-Emergency Alarm System</span>
-        <span>© 2026 · Mindanao State University</span>
+        <span>© 2026 · Mindoro State University</span>
       </footer>
 
       {/* ── Mobile/Tablet bottom navigation (hidden on xl+) ────────────────── */}

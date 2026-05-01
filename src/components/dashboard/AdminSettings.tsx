@@ -295,7 +295,7 @@ export function AdminSettings() {
   };
 
   return (
-    <div className="space-y-4 w-full max-w-2xl">
+    <div className="space-y-4 w-full">
       <h1 className="text-2xl font-black text-white">Settings</h1>
 
       {/* Notifications */}

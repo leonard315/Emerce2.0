@@ -20,8 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { UserRole } from '@/lib/types';
 import Link from 'next/link';
 
-// ─── Shared styles (module-level constants — never recreated) ─────────────────
-const cardCls = "w-full rounded-2xl bg-[hsl(222,47%,8%)] border border-white/5 shadow-2xl p-6 sm:p-8";
+// ─── Shared styles ────────────────────────────────────────────────────────────
+const cardCls = "w-full rounded-2xl bg-[hsl(222,47%,8%)] border border-white/5 shadow-2xl p-5 sm:p-8";
 const inputCls = "h-12 rounded-xl bg-[hsl(222,47%,11%)] border border-white/8 text-white placeholder:text-white/25 focus-visible:ring-red-500/40 focus-visible:border-red-500/50 text-sm caret-white";
 const labelCls = "text-sm font-semibold text-white mb-1 block";
 const submitCls = "w-full h-12 rounded-xl bg-red-600 hover:bg-red-500 active:scale-[0.98] text-white font-bold text-sm tracking-wide transition-all duration-150 shadow-[0_4px_16px_rgba(220,38,38,0.4)] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center";
@@ -44,21 +44,27 @@ function SirenIcon({ className }: { className?: string }) {
 // ─── Page shell (module-level — stable reference, never recreated on re-render) ─
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[hsl(222,47%,4%)] px-4 py-12">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[hsl(222,47%,4%)] px-4 py-10 sm:py-16">
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0" style={{
-        background: 'radial-gradient(ellipse 70% 55% at 50% 40%, rgba(180,30,30,0.10) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 70% 55% at 50% 40%, rgba(180,30,30,0.12) 0%, transparent 70%)',
       }} />
-      <div className="relative z-10 w-full max-w-sm sm:max-w-md flex flex-col items-center gap-6">
+      <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center gap-5">
+        {/* Brand */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-red-600 shadow-[0_8px_32px_rgba(220,38,38,0.5)]">
-            <SirenIcon className="h-9 w-9 text-white" />
+          <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(220,38,38,0.5)]">
+            <img src="/icons/logo.png" alt="Emergency Hotline" className="w-full h-full object-cover" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Emergency Hotline</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">Smart Multi-Emergency Alarm System</p>
+            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">Emergency Hotline</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Smart Multi-Emergency Alarm System</p>
           </div>
         </div>
-        {children}
+
+        {/* Card — full width on mobile */}
+        <div className="w-full">
+          {children}
+        </div>
+
         <Link href="/" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors">
           <HomeIcon className="h-3.5 w-3.5" />
           Back to Home
@@ -146,8 +152,12 @@ function AuthContent() {
         } else throw err;
       }
       await finalizeProfile(uid, email, name, 'user');
-      toast({ title: 'Account created', description: 'Welcome to Emergency Hotline.' });
-      router.push('/dashboard');
+      toast({ title: 'Account created', description: 'Please sign in to continue.' });
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setName('');
+      setActiveTab('login');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Registration failed', description: error.message });
     } finally {
@@ -199,11 +209,11 @@ function AuthContent() {
     return (
       <PageShell>
         <div className={cardCls}>
-          <div className="mb-6">
+          <div className="mb-5">
             <h2 className="text-xl font-black text-white">Sign In</h2>
             <p className="text-sm text-muted-foreground mt-0.5">Access the emergency response panel</p>
           </div>
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label className={labelCls}>Email Address</Label>
               <Input type="email" placeholder="you@example.com" className={inputCls}
@@ -246,9 +256,10 @@ function AuthContent() {
               Create one
             </button>
           </p>
+          <div className="mt-5 pt-4 border-t border-white/5 flex justify-center">
+            <AgencyDots />
+          </div>
         </div>
-
-        <AgencyDots />
 
         {/* Forgot password dialog */}
         <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
@@ -292,11 +303,11 @@ function AuthContent() {
   return (
     <PageShell>
       <div className={cardCls}>
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="text-xl font-black text-white">Create Account</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Register to access the emergency response panel</p>
         </div>
-        <form onSubmit={handleRegister} className="space-y-5">
+        <form onSubmit={handleRegister} className="space-y-4">
           <div>
             <Label className={labelCls}>Full Name</Label>
             <Input type="text" placeholder="Juan dela Cruz" className={inputCls}
@@ -358,6 +369,9 @@ function AuthContent() {
             Sign in
           </button>
         </p>
+        <div className="mt-5 pt-4 border-t border-white/5 flex justify-center">
+          <AgencyDots />
+        </div>
       </div>
     </PageShell>
   );

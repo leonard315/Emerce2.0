@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, setDoc } from 'firebase/firestore';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { EmergencyAlert, UserProfile } from '@/lib/types';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,11 @@ import {
   Palette,
   UserCircle,
   TriangleAlert,
+  Camera,
+  Pencil,
+  Check,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { format, subDays, isSameDay } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
@@ -50,6 +57,121 @@ const MapContainer = dynamic(() => import('react-leaflet').then(m => m.MapContai
 const TileLayer = dynamic(() => import('react-leaflet').then(m => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then(m => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then(m => m.Popup), { ssr: false });
+
+// ─── Admin Profile View ───────────────────────────────────────────────────────
+function AdminProfileView({ profile, db }: { profile: any; db: any }) {
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [nameValue, setNameValue] = useState(profile?.name || '');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!profile || !db || !nameValue.trim()) return;
+    setSaving(true);
+    try {
+      await setDoc(doc(db, 'users', profile.uid), { name: nameValue.trim() }, { merge: true });
+      toast({ title: 'Profile updated' });
+      setEditing(false);
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Update failed', description: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (!profile || !db) return;
+    try {
+      const { resizeImageToBase64 } = await import('@/lib/resize-image');
+      const dataUrl = await resizeImageToBase64(file, 200, 0.7);
+      await setDoc(doc(db, 'users', profile.uid), { photoURL: dataUrl }, { merge: true });
+      toast({ title: 'Profile photo updated' });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
+    }
+  };
+
+  return (
+    <div className="space-y-4 w-full max-w-2xl">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">My Profile</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Manage your admin account</p>
+        </div>
+        {!editing ? (
+          <Button variant="outline" size="sm" className="h-9 px-4 border-white/10 bg-white/5 hover:bg-white/10 text-white gap-2 rounded-xl"
+            onClick={() => setEditing(true)}>
+            <Pencil className="h-3.5 w-3.5" /> Edit Profile
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="h-9 px-3 text-slate-400 hover:text-white rounded-xl"
+              onClick={() => { setEditing(false); setNameValue(profile?.name || ''); }} disabled={saving}>
+              <X className="h-4 w-4" />
+            </Button>
+            <Button size="sm" className="h-9 px-4 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl gap-2"
+              onClick={handleSave} disabled={saving || !nameValue.trim()}>
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+              Save
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden">
+        {/* Cover */}
+        <div className="h-20 bg-gradient-to-r from-purple-900/40 to-slate-900" />
+        <div className="px-6 pb-6">
+          {/* Avatar */}
+          <div className="relative -mt-10 mb-4 w-fit">
+            <div className="h-20 w-20 rounded-2xl bg-purple-500/10 border-4 border-slate-900 overflow-hidden flex items-center justify-center text-purple-400 font-black text-3xl relative">
+              {profile?.photoURL ? (
+                <Image src={profile.photoURL} alt="Avatar" fill className="object-cover" />
+              ) : (
+                profile?.name?.charAt(0)?.toUpperCase() || 'A'
+              )}
+            </div>
+            <label htmlFor="admin-avatar-upload"
+              className="absolute -bottom-1.5 -right-1.5 h-7 w-7 rounded-lg bg-slate-700 hover:bg-slate-600 border border-white/10 flex items-center justify-center cursor-pointer transition-colors"
+              title="Change photo">
+              <Camera className="h-3.5 w-3.5 text-white" />
+            </label>
+            <input id="admin-avatar-upload" type="file" accept="image/*" className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }} />
+          </div>
+
+          <div className="mb-5">
+            <h2 className="text-xl font-black text-white">{profile?.name || 'Admin'}</h2>
+            <p className="text-sm text-slate-400">{profile?.email}</p>
+            <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-xs font-bold mt-2">Admin</Badge>
+          </div>
+
+          <Separator className="bg-white/5 mb-5" />
+
+          <div className="space-y-4">
+            <div>
+              <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
+              <Input value={nameValue} onChange={e => setNameValue(e.target.value)}
+                className={cn("mt-2 border-white/10 text-white transition-colors",
+                  editing ? "bg-slate-800 border-white/20" : "bg-slate-800/50 cursor-default")}
+                readOnly={!editing}
+                onKeyDown={e => { if (e.key === 'Enter' && editing) handleSave(); }} />
+            </div>
+            <div>
+              <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</Label>
+              <Input value={profile?.email || ''} className="mt-2 bg-slate-800/50 border-white/10 text-slate-400 cursor-default" readOnly />
+              <p className="text-[10px] text-slate-600 mt-1">Email cannot be changed</p>
+            </div>
+            <div>
+              <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Role</Label>
+              <Input value="ADMIN" className="mt-2 bg-slate-800/50 border-white/10 text-slate-400 cursor-default" readOnly />
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 export function AdminDashboard() {
   const db = useFirestore();
@@ -101,10 +223,10 @@ export function AdminDashboard() {
   if (!mounted) return null;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <AdminSidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#0a0f1e] border-l border-white/5 overflow-y-auto h-screen">
-        <div className="max-w-[1600px] mx-auto p-4 lg:p-6 space-y-4 animate-in fade-in duration-500 w-full">
+      <SidebarInset className="bg-[#0a0f1e] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
+        <div className="w-full p-4 lg:p-6 space-y-4 animate-in fade-in duration-500">
 
           {/* ── Overview ─────────────────────────────────────────────────── */}
           {currentView === "overview" && (
@@ -480,47 +602,7 @@ export function AdminDashboard() {
 
           {/* ── Profile view ─────────────────────────────────────────────── */}
           {currentView === "profile" && (
-            <div className="space-y-4 w-full max-w-3xl">
-              <h1 className="text-2xl font-black text-white">My Profile</h1>
-              <Card className="bg-slate-900/60 border-white/5 rounded-2xl p-8">
-                <div className="space-y-6">
-                  <div className="flex items-center gap-6">
-                    <div className="h-20 w-20 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 font-black text-3xl">
-                      {profile?.name?.charAt(0)?.toUpperCase() || 'A'}
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-black text-white">{profile?.name || 'Admin'}</h2>
-                      <p className="text-sm text-slate-400">{profile?.email}</p>
-                      <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-xs font-bold mt-2">
-                        Admin
-                      </Badge>
-                    </div>
-                  </div>
-                  <Separator className="bg-white/5" />
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
-                      <Input
-                        defaultValue={profile?.name || ''}
-                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</Label>
-                      <Input
-                        defaultValue={profile?.email || ''}
-                        type="email"
-                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
-                        disabled
-                      />
-                    </div>
-                    <Button className="w-full bg-red-600 hover:bg-red-500 text-white font-bold">
-                      Update Profile
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </div>
+            <AdminProfileView profile={profile} db={db} />
           )}
 
           {/* ── Settings view ────────────────────────────────────────────── */}

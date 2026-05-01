@@ -99,9 +99,9 @@ export function MedicalDashboard() {
   const activeAlerts = alerts.filter(a => a.status !== 'resolved' && a.location);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <AgencySidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#080d1a] border-l border-white/5 overflow-y-auto h-screen">
+      <SidebarInset className="bg-[#080d1a] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
 
         {currentView === 'profile' && (
           <div className="p-6">

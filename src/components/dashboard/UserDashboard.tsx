@@ -1,14 +1,16 @@
 
 "use client";
 
-import { useState } from 'react';
-import { collection, doc, writeBatch, query, orderBy, serverTimestamp as firestoreTimestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, doc, setDoc, writeBatch, query, orderBy, serverTimestamp as firestoreTimestamp } from 'firebase/firestore';
 import { ref, push, serverTimestamp as rtdbTimestamp } from 'firebase/database';
 import { useFirestore, useCollection, useDatabase, useMemoFirebase } from '@/firebase';
 import { EmergencyAlert, EmergencyType } from '@/lib/types';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Shield, Activity, AlertTriangle, Star, Zap, Info, Radio, Menu, MapPin, Clock, Loader2, Navigation } from 'lucide-react';
+import { Flame, Shield, Activity, AlertTriangle, Star, Zap, Info, Radio, Menu, MapPin, Clock, Loader2, Navigation, ClipboardList, Camera } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -46,11 +48,17 @@ export function UserDashboard() {
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'acquiring' | 'acquired' | 'denied'>('idle');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [mapMounted, setMapMounted] = useState(false);
+  const [manualLocation, setManualLocation] = useState('');
+  const [photoEvidence, setPhotoEvidence] = useState<File | null>(null);
 
-  // Load leaflet CSS on mount
+  // Load leaflet CSS on mount and set mapMounted
   useState(() => {
     import('leaflet/dist/leaflet.css');
   });
+
+  useEffect(() => {
+    setMapMounted(true);
+  }, []);
 
   const [easeOfUse, setEaseOfUse] = useState([3]);
   const [reliability, setReliability] = useState([3]);
@@ -165,10 +173,10 @@ export function UserDashboard() {
   const satelliteMapImg = PlaceHolderImages.find(img => img.id === 'satellite-map')?.imageUrl;
 
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <UserSidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#020617] border-l border-white/5">
-        <div className="space-y-8 max-w-[1400px] mx-auto p-4 lg:p-10 pb-20 animate-in fade-in duration-700">
+      <SidebarInset className="bg-[#020617] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
+        <div className="space-y-8 w-full p-4 lg:p-8 pb-20 animate-in fade-in duration-700">
           
           {currentView === "home" && (
             <>
@@ -192,7 +200,17 @@ export function UserDashboard() {
                   {emergencyButtons.map((btn) => (
                     <Button 
                       key={btn.type} 
-                      onClick={() => { setSelectedType(btn.type); setConfirmOpen(true); }} 
+                      onClick={() => { 
+                        setSelectedType(btn.type); 
+                        setConfirmOpen(true);
+                        // Start GPS acquisition immediately
+                        setGpsStatus('acquiring');
+                        navigator.geolocation?.getCurrentPosition(
+                          pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); },
+                          () => setGpsStatus('denied'),
+                          { timeout: 8000, enableHighAccuracy: true }
+                        );
+                      }} 
                       disabled={isSubmitting} 
                       className={cn(
                         "h-[280px] rounded-[3rem] flex flex-col items-center justify-center gap-6 transition-all active:scale-95 relative overflow-hidden",
@@ -256,7 +274,22 @@ export function UserDashboard() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {alerts.map((alert) => (
+                        {alertsLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-16">
+                              <Loader2 className="h-5 w-5 animate-spin text-slate-600 mx-auto" />
+                            </TableCell>
+                          </TableRow>
+                        ) : alerts.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-16">
+                              <div className="flex flex-col items-center gap-3">
+                                <Radio className="h-8 w-8 text-slate-700" />
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">No transmissions yet</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : alerts.map((alert) => (
                           <TableRow key={alert.id} className="border-b border-white/5 hover:bg-white/5">
                             <TableCell className="px-10 py-6 font-black uppercase text-sm text-white italic tracking-tight">
                               <div className="flex items-center gap-4">
@@ -303,39 +336,80 @@ export function UserDashboard() {
           )}
 
           {currentView === "reports" && (
-            <div className="space-y-10">
-              <h1 className="text-5xl font-black text-white uppercase tracking-tighter italic">My Incident Log</h1>
-              <Card className="bg-slate-900/40 border-white/5 rounded-[3rem] overflow-hidden">
-                <Table>
-                   <TableHeader className="bg-white/5">
-                      <TableRow className="border-b border-white/5">
-                        <TableHead className="px-10 h-20 font-black uppercase text-[10px] tracking-[0.4em]">Signal Type</TableHead>
-                        <TableHead className="h-20 font-black uppercase text-[10px] tracking-[0.4em]">Vector</TableHead>
-                        <TableHead className="h-20 font-black uppercase text-[10px] tracking-[0.4em]">Response</TableHead>
-                        <TableHead className="px-10 h-20 font-black uppercase text-[10px] tracking-[0.4em] text-right">Status</TableHead>
+            <div className="space-y-6 w-full">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-black text-white tracking-tight">My Incident Log</h1>
+                  <p className="text-xs text-slate-500 mt-0.5 uppercase tracking-widest">All your submitted emergency reports</p>
+                </div>
+                <Badge className="bg-slate-800 text-slate-400 border-white/10 text-xs font-bold px-3 py-1.5">
+                  {alerts.length} {alerts.length === 1 ? 'report' : 'reports'}
+                </Badge>
+              </div>
+
+              {/* Table card */}
+              <Card className="bg-slate-900/60 border-white/5 rounded-2xl overflow-hidden w-full">
+                <Table className="w-full">
+                  <TableHeader className="bg-white/5">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="px-6 h-12 font-black uppercase text-[10px] text-slate-500 tracking-widest">Signal Type</TableHead>
+                      <TableHead className="h-12 font-black uppercase text-[10px] text-slate-500 tracking-widest">Vector</TableHead>
+                      <TableHead className="h-12 font-black uppercase text-[10px] text-slate-500 tracking-widest">Response</TableHead>
+                      <TableHead className="px-6 h-12 font-black uppercase text-[10px] text-slate-500 tracking-widest text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {alertsLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-20">
+                          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mx-auto" />
+                        </TableCell>
                       </TableRow>
-                   </TableHeader>
-                   <TableBody>
-                      {alerts.map(alert => (
-                        <TableRow key={alert.id} className="border-b border-white/5 hover:bg-white/5">
-                          <TableCell className="px-10 py-8 font-black uppercase text-white italic">{alert.type}</TableCell>
-                          <TableCell className="text-xs font-mono text-slate-500">
-                            {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : 'UNKNOWN'}
-                          </TableCell>
-                          <TableCell className="text-xs font-black text-slate-300 uppercase italic">
-                            {alert.responderName || 'Awaiting Node...'}
-                          </TableCell>
-                          <TableCell className="px-10 text-right">
-                             <Badge className={cn(
-                               "uppercase font-black text-[10px] tracking-widest border-none px-4 py-2 rounded-xl",
-                               alert.status === 'pending' ? 'bg-red-500/10 text-red-500' : 'bg-green-500/10 text-green-500'
-                             )}>
-                                {alert.status}
-                             </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                   </TableBody>
+                    ) : alerts.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-24">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="h-14 w-14 rounded-2xl bg-slate-800/80 flex items-center justify-center">
+                              <ClipboardList className="h-7 w-7 text-slate-600" />
+                            </div>
+                            <p className="text-sm font-bold text-slate-400">No incidents logged</p>
+                            <p className="text-xs text-slate-600">Your emergency reports will appear here once submitted</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : alerts.map(alert => (
+                      <TableRow key={alert.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <TableCell className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "h-2.5 w-2.5 rounded-full flex-shrink-0",
+                              alert.type === 'fire' ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' :
+                              alert.type === 'crime' ? 'bg-blue-500 shadow-[0_0_8px_rgba(37,99,235,0.6)]' :
+                              'bg-red-500 shadow-[0_0_8px_rgba(220,38,38,0.6)]'
+                            )} />
+                            <span className="text-sm font-bold text-white capitalize">{alert.type}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs font-mono text-slate-500">
+                          {alert.location ? `${alert.location.lat.toFixed(4)}, ${alert.location.lng.toFixed(4)}` : '—'}
+                        </TableCell>
+                        <TableCell className="text-xs font-semibold text-slate-400">
+                          {alert.responderName || 'Awaiting responder...'}
+                        </TableCell>
+                        <TableCell className="px-6 text-right">
+                          <Badge className={cn(
+                            "text-[10px] font-bold border-none px-3 py-1 rounded-lg",
+                            alert.status === 'pending' ? 'bg-red-500/10 text-red-400' :
+                            alert.status === 'responding' ? 'bg-blue-500/10 text-blue-400' :
+                            'bg-green-500/10 text-green-400'
+                          )}>
+                            {alert.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
                 </Table>
               </Card>
             </div>
@@ -376,7 +450,7 @@ export function UserDashboard() {
               )}
 
               <Card className="bg-[#020617] border-white/5 rounded-[2rem] overflow-hidden h-[500px]">
-                {typeof window !== 'undefined' && (
+                {mapMounted && (
                   <MapContainer
                     center={userLocation ?? [12.8797, 121.7740]}
                     zoom={userLocation ? 15 : 7}
@@ -446,17 +520,88 @@ export function UserDashboard() {
           )}
 
           {currentView === "profile" && (
-            <div className="space-y-10">
-              <h1 className="text-5xl font-black text-white uppercase tracking-tighter italic">Operator Profile</h1>
-              <Card className="bg-slate-900/40 border-white/5 rounded-[3rem] p-12 shadow-2xl">
-                <div className="flex flex-col md:flex-row items-center gap-10">
-                  <div className="h-32 w-32 rounded-3xl overflow-hidden relative border-2 border-white/10">
-                    <Image src={`https://picsum.photos/seed/${profile?.uid}/200`} fill alt="Avatar" className="object-cover" />
+            <div className="space-y-6 w-full max-w-2xl">
+              <div>
+                <h1 className="text-2xl font-black text-white tracking-tight">My Profile</h1>
+                <p className="text-xs text-slate-500 mt-0.5">Manage your account information</p>
+              </div>
+              <Card className="bg-slate-900/40 border-white/5 rounded-2xl overflow-hidden">
+                {/* Cover strip */}
+                <div className="h-24 bg-gradient-to-r from-slate-800 to-slate-900 relative" />
+
+                {/* Avatar + info */}
+                <div className="px-8 pb-8">
+                  {/* Avatar with edit button */}
+                  <div className="relative -mt-12 mb-6 w-fit">
+                    <div className="h-24 w-24 rounded-2xl overflow-hidden border-4 border-slate-900 relative bg-slate-800">
+                      <Image
+                        src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`}
+                        fill
+                        alt="Avatar"
+                        className="object-cover"
+                      />
+                    </div>
+                    <label
+                      htmlFor="avatar-upload"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-xl bg-red-600 hover:bg-red-500 flex items-center justify-center cursor-pointer shadow-lg transition-colors"
+                      title="Change photo"
+                    >
+                      <Camera className="h-4 w-4 text-white" />
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !profile || !db) return;
+                        try {
+                          const { resizeImageToBase64 } = await import('@/lib/resize-image');
+                          const dataUrl = await resizeImageToBase64(file, 200, 0.7);
+                          await setDoc(
+                            doc(db, 'users', profile.uid),
+                            { photoURL: dataUrl },
+                            { merge: true }
+                          );
+                          toast({ title: 'Profile photo updated' });
+                        } catch (e: any) {
+                          toast({ variant: 'destructive', title: 'Upload failed', description: e.message });
+                        }
+                      }}
+                    />
                   </div>
-                  <div className="space-y-4 text-center md:text-left">
-                    <h2 className="text-4xl font-black text-white uppercase italic tracking-tighter">{profile?.name}</h2>
-                    <p className="text-slate-500 font-bold uppercase tracking-widest">{profile?.email}</p>
-                    <Badge className="bg-primary/20 text-primary border-primary/20 px-6 py-2 rounded-xl font-black uppercase tracking-[0.2em] text-[10px]">{profile?.role} sector</Badge>
+
+                  <div className="space-y-1 mb-6">
+                    <h2 className="text-xl font-black text-white">{profile?.name}</h2>
+                    <p className="text-sm text-slate-400">{profile?.email}</p>
+                    <Badge className="bg-primary/20 text-primary border-primary/20 text-xs font-bold capitalize mt-1">
+                      {profile?.role} sector
+                    </Badge>
+                  </div>
+
+                  <Separator className="bg-white/5 mb-6" />
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</Label>
+                      <Input
+                        defaultValue={profile?.name || ''}
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Email</Label>
+                      <Input
+                        defaultValue={profile?.email || ''}
+                        type="email"
+                        className="mt-2 bg-slate-800/50 border-white/10 text-white"
+                        disabled
+                      />
+                    </div>
+                    <Button className="w-full h-11 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl">
+                      Update Profile
+                    </Button>
                   </div>
                 </div>
               </Card>
@@ -464,7 +609,7 @@ export function UserDashboard() {
           )}
 
           {currentView === "feedback" && (
-            <div className="space-y-8 max-w-2xl">
+            <div className="space-y-8 w-full max-w-2xl">
               <h1 className="text-3xl font-black text-white tracking-tight">Feedback & Evaluation</h1>
               <Card className="bg-slate-900/40 border-white/5 rounded-2xl p-8">
                 <div className="mb-6">
@@ -511,22 +656,157 @@ export function UserDashboard() {
             </div>
           )}
 
-          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <AlertDialogContent className="bg-slate-950 border-destructive/30 border-4 rounded-[4rem] p-16 max-w-2xl shadow-[0_0_100px_rgba(220,38,38,0.3)]">
-              <AlertDialogHeader className="space-y-8">
-                <AlertDialogTitle className="text-6xl font-black uppercase tracking-tighter text-destructive text-center italic leading-none">
-                  Confirm Signal
-                </AlertDialogTitle>
-                <AlertDialogDescription className="text-center font-bold text-slate-300 uppercase tracking-tight text-lg leading-relaxed">
-                  Broadcasting <span className="text-white underline decoration-destructive decoration-4 underline-offset-8">{selectedType?.toUpperCase()}</span> signal.<br/>Responders will be dispatched to your current location immediately.
-                </AlertDialogDescription>
+          {/* ── Step 1: Alert Detail Dialog ──────────────────────────────── */}
+          <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!open) { setConfirmOpen(false); setSelectedType(null); setManualLocation(''); setPhotoEvidence(null); } }}>
+            <AlertDialogContent className="bg-[#0d1526] border border-white/10 rounded-3xl p-0 max-w-sm w-full overflow-hidden shadow-2xl">
+              <AlertDialogHeader className="sr-only">
+                <AlertDialogTitle>Report Emergency</AlertDialogTitle>
               </AlertDialogHeader>
-              <AlertDialogFooter className="sm:justify-center gap-8 pt-12">
-                <AlertDialogCancel className="rounded-2xl h-20 px-12 font-black uppercase tracking-[0.3em] text-xs border-white/10 bg-slate-900 text-white hover:bg-slate-800 transition-all" onClick={() => setSelectedType(null)}>Abort</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmAlert} className="bg-destructive hover:bg-destructive/90 rounded-2xl h-20 px-12 font-black uppercase tracking-[0.3em] text-xs shadow-2xl shadow-destructive/40 transition-all active:scale-95">Confirm Transmission</AlertDialogAction>
-              </AlertDialogFooter>
+              {/* Map preview — static tile to avoid Leaflet SSR issues in dialog */}
+              <div className="h-44 w-full relative overflow-hidden bg-slate-800">
+                {userLocation ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`https://staticmap.openstreetmap.de/staticmap.php?center=${userLocation[0]},${userLocation[1]}&zoom=14&size=400x176&markers=${userLocation[0]},${userLocation[1]},red`}
+                    alt="Location map"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to a simple colored div if static map fails
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+                    <p className="text-xs text-slate-500 font-bold">Acquiring GPS...</p>
+                  </div>
+                )}
+                {/* Overlay gradient at bottom */}
+                <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-[#0d1526] to-transparent" />
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Alert type header */}
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className={cn(
+                    "h-12 w-12 rounded-2xl flex items-center justify-center",
+                    selectedType === 'fire' ? 'bg-orange-500/20' :
+                    selectedType === 'police' ? 'bg-blue-500/20' :
+                    selectedType === 'medical' ? 'bg-red-500/20' : 'bg-slate-700/50'
+                  )}>
+                    {selectedType === 'fire' && <Flame className="h-6 w-6 text-orange-400" />}
+                    {selectedType === 'police' && <Shield className="h-6 w-6 text-blue-400" />}
+                    {selectedType === 'medical' && <Activity className="h-6 w-6 text-red-400" />}
+                    {selectedType === 'all' && <AlertTriangle className="h-6 w-6 text-yellow-400" />}
+                  </div>
+                  <h2 className="text-lg font-black text-white uppercase tracking-widest">
+                    {selectedType === 'all' ? 'All Agencies' : selectedType} Alert
+                  </h2>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                    <MapPin className="h-3 w-3" />
+                    {gpsStatus === 'acquired' && userLocation
+                      ? `${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}`
+                      : 'Detecting location...'}
+                  </div>
+                </div>
+
+                {/* Location status — responsive to GPS state */}
+                <div className="space-y-1.5">
+                  {gpsStatus === 'acquired' && userLocation ? (
+                    /* GPS success — green pill */
+                    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <div className="flex items-center gap-2 text-xs text-green-400 font-semibold">
+                        <MapPin className="h-3.5 w-3.5" />
+                        GPS acquired — {userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setGpsStatus('denied'); setUserLocation(null); }}
+                        className="text-[10px] text-slate-400 hover:text-white font-semibold"
+                      >
+                        Override
+                      </button>
+                    </div>
+                  ) : gpsStatus === 'acquiring' || gpsStatus === 'idle' ? (
+                    /* GPS acquiring — spinner pill, no manual input */
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-800/50 border border-white/8">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400 flex-shrink-0" />
+                      <span className="text-xs text-slate-400 font-semibold">Acquiring GPS location...</span>
+                    </div>
+                  ) : (
+                    /* GPS denied — manual input + retry */
+                    <>
+                      <Input
+                        placeholder="Enter your location manually..."
+                        value={manualLocation}
+                        onChange={e => setManualLocation(e.target.value)}
+                        className="bg-slate-800/50 border-white/10 text-white text-sm h-10 rounded-xl placeholder:text-slate-500"
+                        autoFocus
+                      />
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-yellow-400 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" /> GPS unavailable — type your location
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGpsStatus('acquiring');
+                            navigator.geolocation?.getCurrentPosition(
+                              pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); },
+                              () => setGpsStatus('denied'),
+                              { timeout: 8000, enableHighAccuracy: true }
+                            );
+                          }}
+                          className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1"
+                        >
+                          <Navigation className="h-3 w-3" /> Retry GPS
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  <p className="text-xs text-slate-500 text-center">Agency will be notified immediately.</p>
+                </div>
+
+                {/* Warning */}
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                  <AlertTriangle className="h-4 w-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-yellow-300 leading-relaxed">
+                    <span className="font-black">False reports are prohibited.</span> Sending fake alerts may result in account suspension after 3 violations.
+                  </p>
+                </div>
+
+                {/* Photo evidence */}
+                <label className="flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-white/20 text-slate-400 hover:text-white hover:border-white/40 cursor-pointer transition-colors text-sm font-semibold">
+                  <Camera className="h-4 w-4" />
+                  {photoEvidence ? photoEvidence.name : 'Add Photo Evidence (optional)'}
+                  <input type="file" accept="image/*" className="hidden" onChange={e => setPhotoEvidence(e.target.files?.[0] || null)} />
+                </label>
+
+                {/* Buttons */}
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={() => { setConfirmOpen(false); setSelectedType(null); setManualLocation(''); setPhotoEvidence(null); }}
+                    className="flex-1 h-12 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => { setConfirmOpen(false); confirmAlert(); }}
+                    className={cn(
+                      "flex-1 h-12 rounded-xl font-bold text-sm text-white transition-all active:scale-95 shadow-lg",
+                      selectedType === 'fire' ? 'bg-orange-500 hover:bg-orange-400 shadow-orange-900/40' :
+                      selectedType === 'police' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/40' :
+                      selectedType === 'medical' ? 'bg-red-600 hover:bg-red-500 shadow-red-900/40' :
+                      'bg-red-600 hover:bg-red-500 shadow-red-900/40'
+                    )}
+                  >
+                    Send Alert
+                  </button>
+                </div>
+              </div>
             </AlertDialogContent>
           </AlertDialog>
+
         </div>
       </SidebarInset>
     </SidebarProvider>

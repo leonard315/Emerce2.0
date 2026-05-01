@@ -6,6 +6,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   createdAt: any;
+  photoURL?: string;
 }
 
 export type EmergencyType = 'fire' | 'crime' | 'medical';

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Emergency Hotline | Smart Multi-Emergency Alarm System',
@@ -23,13 +24,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/icons/icon.svg', type: 'image/svg+xml' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/logo.png', type: 'image/png' },
+      { url: '/icons/logo.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/logo.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
-      { url: '/icons/icon-152x152.png', sizes: '152x152', type: 'image/png' },
-      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/logo.png', sizes: '152x152', type: 'image/png' },
+      { url: '/icons/logo.png', sizes: '192x192', type: 'image/png' },
     ],
   },
 };
@@ -66,6 +67,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
           <Toaster />
+          <PWAInstallPrompt />
         </FirebaseClientProvider>
       </body>
     </html>

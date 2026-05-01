@@ -91,23 +91,19 @@ export function AgencySidebar({ currentView, onViewChange }: AgencySidebarProps)
 
   return (
     <Sidebar className="border-r border-white/5 bg-[#020617] w-72">
-      <SidebarHeader className="p-8 pb-4">
-        <div className="flex items-center gap-4">
-          <div className={cn("p-2.5 rounded-2xl shadow-lg", config.headerBg)}>
-            <AgencyIcon className={cn("h-6 w-6", config.color)} />
+      <SidebarHeader className="p-6 pb-4 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/30">
+            <img src="/icons/logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
-          <div className="flex flex-col">
-            <h2 className="text-xl font-black text-white leading-none tracking-tighter">
-              {config.label}
-            </h2>
-            <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest">
-              {config.subtitle}
-            </p>
+          <div className="flex flex-col min-w-0">
+            <h2 className="text-sm font-bold text-white leading-tight tracking-tight truncate">{config.label}</h2>
+            <p className="text-[10px] font-bold text-slate-500 mt-0.5 uppercase tracking-widest truncate">{config.subtitle}</p>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-6 pt-10">
+      <SidebarContent className="px-4 pt-6">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -115,10 +111,10 @@ export function AgencySidebar({ currentView, onViewChange }: AgencySidebarProps)
                 <SidebarMenuItem key={item.title}>
                   {item.href ? (
                     <Link href={item.href}>
-                      <SidebarMenuButton className={cn("h-14 px-4 rounded-xl transition-all mb-2 hover:bg-white/5 text-slate-500 hover:text-white w-full")}>
-                        <div className="flex items-center gap-4 w-full">
-                          <item.icon className="h-6 w-6 text-slate-500" />
-                          <span className="text-md tracking-tight font-bold">{item.title}</span>
+                      <SidebarMenuButton className="h-11 px-3 rounded-xl transition-all mb-1 hover:bg-white/5 text-slate-500 hover:text-white w-full">
+                        <div className="flex items-center gap-3 w-full">
+                          <item.icon className="h-5 w-5 text-slate-500 flex-shrink-0" />
+                          <span className="text-sm font-semibold">{item.title}</span>
                         </div>
                       </SidebarMenuButton>
                     </Link>
@@ -126,20 +122,18 @@ export function AgencySidebar({ currentView, onViewChange }: AgencySidebarProps)
                     <SidebarMenuButton
                       onClick={() => onViewChange(item.view)}
                       className={cn(
-                        "h-14 px-4 rounded-xl transition-all relative overflow-hidden group mb-2 hover:bg-white/5",
+                        "h-11 px-3 rounded-xl transition-all mb-1",
                         currentView === item.view
-                          ? cn("text-white font-black", config.activeBg)
-                          : "text-slate-500 hover:text-white"
+                          ? cn("bg-white/5 text-white", config.activeBg)
+                          : "text-slate-500 hover:text-white hover:bg-white/5"
                       )}
                     >
-                      <div className="flex items-center gap-4 w-full">
-                        <item.icon
-                          className={cn(
-                            "h-6 w-6 transition-colors",
-                            currentView === item.view ? config.activeIcon : "text-slate-500"
-                          )}
-                        />
-                        <span className="text-md tracking-tight font-bold">{item.title}</span>
+                      <div className="flex items-center gap-3 w-full">
+                        <item.icon className={cn(
+                          "h-5 w-5 flex-shrink-0 transition-colors",
+                          currentView === item.view ? config.activeIcon : "text-slate-500"
+                        )} />
+                        <span className="text-sm font-semibold">{item.title}</span>
                       </div>
                     </SidebarMenuButton>
                   )}
@@ -150,29 +144,15 @@ export function AgencySidebar({ currentView, onViewChange }: AgencySidebarProps)
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-8 border-t border-white/5 bg-[#020617] mt-auto">
-        <div className="space-y-4">
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="w-full h-14 justify-start px-4 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 font-bold transition-all gap-4"
-          >
-            <LogOut className="h-6 w-6" />
-            <span className="text-md tracking-tight">Logout</span>
-          </Button>
-
-          <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">
-                Signal Status
-              </span>
-              <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            </div>
-            <p className="text-[10px] font-black text-white leading-none uppercase tracking-tighter">
-              Encrypted Node 4.8.2
-            </p>
-          </div>
-        </div>
+      <SidebarFooter className="p-4 border-t border-white/5 bg-[#020617] mt-auto">
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className="w-full h-11 justify-start px-3 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/5 font-semibold transition-all gap-3"
+        >
+          <LogOut className="h-5 w-5" />
+          <span className="text-sm">Logout</span>
+        </Button>
       </SidebarFooter>
     </Sidebar>
   );

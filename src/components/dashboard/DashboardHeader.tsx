@@ -73,9 +73,9 @@ export function DashboardHeader() {
     <header className="h-16 border-b border-white/5 bg-[#020617]/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10 sticky top-0 z-50">
       {/* Brand */}
       <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
-        <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg bg-red-600 shadow-lg shadow-red-900/40">
-          <TriangleAlert className="h-5 w-5 text-white" />
-        </div>
+        <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/40">
+            <img src="/icons/logo.png" alt="Logo" className="w-full h-full object-cover" />
+          </div>
         <div className="min-w-0">
           <p className="text-sm font-bold leading-tight tracking-tight text-white truncate">
             Emergency Hotline
@@ -122,7 +122,8 @@ export function DashboardHeader() {
             >
               <Avatar className="h-full w-full rounded-none">
                 <AvatarImage
-                  src={`https://picsum.photos/seed/${profile?.uid}/200`}
+                  key={profile?.photoURL || profile?.uid}
+                  src={profile?.photoURL || `https://picsum.photos/seed/${profile?.uid}/200`}
                   alt={profile?.name || ''}
                 />
                 <AvatarFallback className="bg-red-600/20 text-red-400 font-black text-sm rounded-none">

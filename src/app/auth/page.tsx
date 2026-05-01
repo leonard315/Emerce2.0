@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useAuth as useFirebaseHooks, useFirestore } from '@/firebase';
+import { setLoginTimestamp } from '@/firebase';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -170,6 +171,7 @@ function AuthContent() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      setLoginTimestamp(); // record login time for 7-day session
       router.push('/dashboard');
     } catch (error: any) {
       const message = error.code === 'auth/invalid-credential'

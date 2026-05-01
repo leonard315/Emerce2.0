@@ -2,9 +2,34 @@
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 import { getDatabase } from 'firebase/database'
+
+const SESSION_KEY = 'eh_login_ts';
+const SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+export function getLoginTimestamp(): number | null {
+  if (typeof window === 'undefined') return null;
+  const v = localStorage.getItem(SESSION_KEY);
+  return v ? parseInt(v, 10) : null;
+}
+
+export function setLoginTimestamp(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SESSION_KEY, Date.now().toString());
+}
+
+export function clearLoginTimestamp(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(SESSION_KEY);
+}
+
+export function isSessionExpired(): boolean {
+  const ts = getLoginTimestamp();
+  if (!ts) return true; // no timestamp = treat as expired
+  return Date.now() - ts > SESSION_MAX_MS;
+}
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -34,9 +59,12 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  const auth = getAuth(firebaseApp);
+  // Ensure session persists across browser restarts
+  setPersistence(auth, browserLocalPersistence).catch(() => {});
   return {
     firebaseApp,
-    auth: getAuth(firebaseApp),
+    auth,
     firestore: getFirestore(firebaseApp),
     database: getDatabase(firebaseApp)
   };

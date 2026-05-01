@@ -14,6 +14,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth as useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { signOut } from 'firebase/auth';
+import { clearLoginTimestamp } from '@/firebase';
 
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth();
@@ -29,6 +30,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     try {
+      clearLoginTimestamp();
       await signOut(auth);
       router.push('/auth');
     } catch (e: any) {

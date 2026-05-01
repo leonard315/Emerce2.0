@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { signOut } from 'firebase/auth';
 import { useAuth as useFirebase } from '@/firebase';
+import { clearLoginTimestamp } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -42,6 +43,7 @@ export function UserSidebar({ currentView, onViewChange }: UserSidebarProps) {
   
   const handleLogout = async () => {
     try {
+      clearLoginTimestamp();
       await signOut(auth);
       router.push('/auth');
     } catch (error) {

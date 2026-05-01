@@ -1,10 +1,13 @@
 
 'use client';
 
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { useUser, useDoc, useFirestore } from '@/firebase';
 import { UserProfile } from '@/lib/types';
 import { doc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { useAuth as useFirebaseAuth } from '@/firebase';
+import { isSessionExpired, clearLoginTimestamp } from '@/firebase';
 
 interface AuthContextType {
   user: any;
@@ -17,7 +20,17 @@ const AuthContext = createContext<AuthContextType>({ user: null, profile: null, 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading: userLoading } = useUser();
   const db = useFirestore();
-  
+  const auth = useFirebaseAuth();
+
+  // ── Session expiry check ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return; // not logged in, nothing to check
+    if (isSessionExpired()) {
+      clearLoginTimestamp();
+      signOut(auth).catch(() => {});
+    }
+  }, [user, auth]);
+
   const profileRef = useMemo(() => {
     if (!user || !db) return null;
     return doc(db, 'users', user.uid);

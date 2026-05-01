@@ -9,6 +9,7 @@ import { ref, onValue, set, onDisconnect, serverTimestamp } from 'firebase/datab
 import { Button } from "@/components/ui/button";
 import { TriangleAlert, LogOut, Radio } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
+import { clearLoginTimestamp } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -60,6 +61,7 @@ export function DashboardHeader({ sidebarTrigger }: DashboardHeaderProps = {}) {
   }, [rtdb, user, profile]);
 
   const handleLogout = async () => {
+    clearLoginTimestamp();
     await signOut(auth);
     router.push('/');
   };

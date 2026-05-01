@@ -90,7 +90,7 @@ export function AgencySidebar({ currentView, onViewChange }: AgencySidebarProps)
   ];
 
   return (
-    <Sidebar className="border-r border-white/5 bg-[#020617] w-72">
+    <Sidebar collapsible="offcanvas" className="border-r border-white/5 bg-[#020617]">
       <SidebarHeader className="p-6 pb-4 border-b border-white/5">
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-lg overflow-hidden shadow-lg shadow-red-900/30">

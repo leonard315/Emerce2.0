@@ -105,7 +105,7 @@ export function MedicalDashboard() {
   return (
     <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <AgencySidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#080d1a] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
+      <SidebarInset className="bg-[#080d1a] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1 w-0">
 
         {currentView === 'profile' && (
           <div className="p-6">

@@ -46,7 +46,7 @@ import {
 import { format, subDays, isSameDay } from 'date-fns';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminSettings } from "./AdminSettings";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -225,7 +225,7 @@ export function AdminDashboard() {
   return (
     <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <AdminSidebar currentView={currentView} onViewChange={setCurrentView} />
-      <SidebarInset className="bg-[#0a0f1e] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1">
+      <SidebarInset className="bg-[#0a0f1e] border-l border-white/5 overflow-y-auto h-screen min-w-0 flex-1 w-0">
         <div className="w-full p-4 lg:p-6 space-y-4 animate-in fade-in duration-500">
 
           {/* ── Overview ─────────────────────────────────────────────────── */}
@@ -233,9 +233,12 @@ export function AdminDashboard() {
             <>
               {/* Page header */}
               <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-black text-white tracking-tight">Admin Dashboard</h1>
-                  <p className="text-xs text-slate-500 mt-0.5">Welcome back, Admin</p>
+                <div className="flex items-center gap-3">
+                  <SidebarTrigger className="xl:hidden h-9 w-9 rounded-xl border border-white/10 bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex-shrink-0" />
+                  <div>
+                    <h1 className="text-xl font-black text-white tracking-tight">Admin Dashboard</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Welcome back, Admin</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" className="h-8 text-xs border-white/10 text-slate-300 hover:bg-white/5 gap-1.5">

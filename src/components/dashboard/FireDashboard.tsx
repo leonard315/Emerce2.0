@@ -319,11 +319,26 @@ export function FireDashboard() {
                               variant="outline"
                               size="sm"
                               className="border-white/10 text-slate-400 hover:text-white hover:bg-white/5 gap-1.5"
-                              asChild
+                              onClick={() => {
+                                if (!alert.location) return;
+                                const { lat, lng } = alert.location;
+                                if (navigator.geolocation) {
+                                  navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                      const origin = `${pos.coords.latitude},${pos.coords.longitude}`;
+                                      const dest = `${lat},${lng}`;
+                                      window.open(`https://www.google.com/maps/dir/${origin}/${dest}`, '_blank');
+                                    },
+                                    () => {
+                                      window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+                                    }
+                                  );
+                                } else {
+                                  window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+                                }
+                              }}
                             >
-                              <Link href="/map">
-                                <MapPin className="h-4 w-4" /> View on Map
-                              </Link>
+                              <MapPin className="h-4 w-4" /> View on Map
                             </Button>
                           )}
                         </div>

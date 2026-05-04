@@ -6,42 +6,48 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 const ALERT_DURATION_MS = 60_000; // 1 minute
 
 // ─── Fire alarm sound ─────────────────────────────────────────────────────────
-// Classic klaxon/bell pattern: rapid high-pitched pulses
+// BFP fire bell: classic continuous ringing bell pattern
 function createFireAlarm(ctx: AudioContext): () => void {
   const nodes: { osc: OscillatorNode; gain: GainNode }[] = [];
   const stopHandles: ReturnType<typeof setTimeout>[] = [];
   let stopped = false;
 
-  const scheduleBeep = (startTime: number) => {
-    if (stopped) return;
-    // Two-tone klaxon: alternating 1200Hz and 800Hz, 0.15s each
-    [1200, 800, 1200, 800].forEach((freq, i) => {
+  // Classic fire bell: rapid 880Hz ring bursts — 3 rings then pause, repeat
+  const ringFreq = 880;
+  const ringDuration = 0.08;  // each ring lasts 80ms
+  const ringGap = 0.04;       // 40ms gap between rings
+  const burstRings = 6;       // 6 rings per burst
+  const burstGap = 0.5;       // 500ms pause between bursts
+  const burstPeriod = burstRings * (ringDuration + ringGap) + burstGap;
+  const totalBursts = Math.floor(ALERT_DURATION_MS / (burstPeriod * 1000));
+
+  for (let b = 0; b < totalBursts; b++) {
+    const burstStart = b * burstPeriod;
+    for (let r = 0; r < burstRings; r++) {
+      const t = ctx.currentTime + burstStart + r * (ringDuration + ringGap);
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(freq, startTime + i * 0.15);
-      gain.gain.setValueAtTime(0, startTime + i * 0.15);
-      gain.gain.linearRampToValueAtTime(0.5, startTime + i * 0.15 + 0.02);
-      gain.gain.setValueAtTime(0.5, startTime + i * 0.15 + 0.12);
-      gain.gain.linearRampToValueAtTime(0, startTime + i * 0.15 + 0.15);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(ringFreq, t);
+      // Add slight frequency wobble for bell effect
+      osc.frequency.linearRampToValueAtTime(ringFreq * 1.02, t + ringDuration * 0.3);
+      osc.frequency.linearRampToValueAtTime(ringFreq * 0.98, t + ringDuration);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.7, t + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + ringDuration);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(startTime + i * 0.15);
-      osc.stop(startTime + i * 0.15 + 0.16);
+      osc.start(t);
+      osc.stop(t + ringDuration + 0.01);
       nodes.push({ osc, gain });
-    });
-  };
-
-  // Schedule repeating pattern every 0.8s for 1 minute
-  const totalBeeps = Math.floor(ALERT_DURATION_MS / 800);
-  for (let i = 0; i < totalBeeps; i++) {
-    scheduleBeep(ctx.currentTime + i * 0.8);
+    }
   }
 
   const autoStop = setTimeout(() => stop(), ALERT_DURATION_MS + 200);
   stopHandles.push(autoStop);
 
   function stop() {
+    if (stopped) return;
     stopped = true;
     stopHandles.forEach(h => clearTimeout(h));
     nodes.forEach(({ osc, gain }) => {
@@ -200,7 +206,7 @@ function createEscapeAlarm(ctx: AudioContext): () => void {
 // ─── New incident beep (3-beep notification) ─────────────────────────────────
 function playAlertBeep(ctx: AudioContext, type: 'fire' | 'police' | 'medical' | 'all' = 'fire') {
   const configs = {
-    fire:    [{ f: 1200, t: 0 }, { f: 1000, t: 0.5 }, { f: 1200, t: 1.0 }],
+    fire:    [{ f: 880,  t: 0 }, { f: 880,  t: 0.15 }, { f: 880,  t: 0.3 }],
     police:  [{ f: 800,  t: 0 }, { f: 1200, t: 0.4 }, { f: 800,  t: 0.8 }],
     medical: [{ f: 960,  t: 0 }, { f: 770,  t: 0.4 }, { f: 960,  t: 0.8 }],
     all:     [{ f: 1800, t: 0 }, { f: 1400, t: 0.2 }, { f: 1800, t: 0.4 }, { f: 1400, t: 0.6 }],

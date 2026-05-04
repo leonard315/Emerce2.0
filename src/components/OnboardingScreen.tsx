@@ -55,7 +55,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const next = () => {
     if (isLast) {
-      localStorage.setItem(ONBOARDING_KEY, '1');
       onDone();
     } else {
       setStep(s => s + 1);
@@ -63,7 +62,6 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   const skip = () => {
-    localStorage.setItem(ONBOARDING_KEY, '1');
     onDone();
   };
 
@@ -131,14 +129,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 }
 
 export function useOnboarding() {
-  const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const done = localStorage.getItem(ONBOARDING_KEY);
-      if (!done) setShow(true);
-    }
-  }, []);
+  const [show, setShow] = useState(true); // always show on open
 
   return { show, done: () => setShow(false) };
 }

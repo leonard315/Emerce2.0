@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { TriangleAlert, X, Download, Smartphone } from 'lucide-react';
+import { X, Download, Smartphone } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,38 +15,32 @@ export function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
+    // Already installed as PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
       return;
     }
 
-    // Check iOS
+    // iOS detection
     const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(ios);
 
-    // Check if dismissed recently
-    const dismissed = localStorage.getItem('pwa-prompt-dismissed');
-    if (dismissed) {
-      const dismissedAt = parseInt(dismissed);
-      // Don't show again for 3 days
-      if (Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000) return;
-    }
-
     if (ios) {
-      // Show iOS instructions after 3 seconds
-      const timer = setTimeout(() => setShow(true), 3000);
+      // Always show iOS instructions after 2s
+      const timer = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(timer);
     }
 
-    // Listen for Chrome/Android install prompt
+    // Chrome/Android — listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setTimeout(() => setShow(true), 2000);
+      setShow(true); // show immediately when event fires
     };
 
     window.addEventListener('beforeinstallprompt', handler);
+
+    // Also check if already captured (page reload case)
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
@@ -61,7 +55,6 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setShow(false);
-    localStorage.setItem('pwa-prompt-dismissed', Date.now().toString());
   };
 
   if (!show || isInstalled) return null;
@@ -80,16 +73,16 @@ export function PWAInstallPrompt() {
             <p className="text-sm font-bold text-white leading-tight">Install Emergency Hotline</p>
             {isIOS ? (
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Tap <span className="text-white font-semibold">Share</span> then{' '}
+                Tap <span className="text-white font-semibold">Share ↑</span> then{' '}
                 <span className="text-white font-semibold">"Add to Home Screen"</span> for instant emergency access.
               </p>
             ) : (
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Add to your home screen for faster emergency reporting — works offline too.
+                Add to your home screen for faster emergency reporting.
               </p>
             )}
 
-            {!isIOS && (
+            {!isIOS && deferredPrompt && (
               <button
                 onClick={handleInstall}
                 className="mt-3 flex items-center gap-1.5 h-8 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors shadow-lg shadow-red-900/30"

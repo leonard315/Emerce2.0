@@ -129,12 +129,16 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 }
 
 export function useOnboarding() {
-  const [show, setShow] = useState(false); // start false, set true after mount
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Small delay so the page renders first before showing onboarding
-    const t = setTimeout(() => setShow(true), 100);
-    return () => clearTimeout(t);
+    // Only show onboarding if coming from a fresh open (no referrer = direct open)
+    // Don't show if navigating back from another page within the app
+    const isInternalNav = document.referrer.includes(window.location.hostname);
+    if (!isInternalNav) {
+      const t = setTimeout(() => setShow(true), 100);
+      return () => clearTimeout(t);
+    }
   }, []);
 
   return { show, done: () => setShow(false) };

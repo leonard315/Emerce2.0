@@ -7,6 +7,8 @@ export interface UserProfile {
   role: UserRole;
   createdAt: any;
   photoURL?: string;
+  age?: number;
+  sex?: string;
 }
 
 export type EmergencyType = 'fire' | 'crime' | 'medical';

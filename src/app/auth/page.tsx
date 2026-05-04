@@ -105,6 +105,8 @@ function AuthContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [sex, setSex] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -120,11 +122,13 @@ function AuthContent() {
     else setActiveTab('login');
   }, [searchParams]);
 
-  const finalizeProfile = async (uid: string, userEmail: string, userName: string, userRole: UserRole) => {
+  const finalizeProfile = async (uid: string, userEmail: string, userName: string, userRole: UserRole, userAge?: number, userSex?: string) => {
     const batch = writeBatch(db);
     batch.set(doc(db, 'users', uid), {
       uid, name: userName || userEmail.split('@')[0],
       email: userEmail, role: userRole, createdAt: serverTimestamp(),
+      ...(userAge !== undefined && { age: userAge }),
+      ...(userSex && { sex: userSex }),
     });
     const roleCollection =
       userRole === 'admin' ? 'roles_admin' :
@@ -141,6 +145,14 @@ function AuthContent() {
       toast({ variant: 'destructive', title: 'Password mismatch', description: 'Passwords do not match.' });
       return;
     }
+    if (!age || isNaN(Number(age)) || Number(age) < 1 || Number(age) > 120) {
+      toast({ variant: 'destructive', title: 'Invalid age', description: 'Please enter a valid age.' });
+      return;
+    }
+    if (!sex) {
+      toast({ variant: 'destructive', title: 'Sex required', description: 'Please select your sex.' });
+      return;
+    }
     setLoading(true);
     try {
       let uid = '';
@@ -152,12 +164,14 @@ function AuthContent() {
           uid = auth.currentUser.uid;
         } else throw err;
       }
-      await finalizeProfile(uid, email, name, 'user');
+      await finalizeProfile(uid, email, name, 'user', Number(age), sex);
       toast({ title: 'Account created', description: 'Please sign in to continue.' });
       setEmail('');
       setPassword('');
       setConfirmPassword('');
       setName('');
+      setAge('');
+      setSex('');
       setActiveTab('login');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Registration failed', description: error.message });
@@ -314,6 +328,37 @@ function AuthContent() {
             <Label className={labelCls}>Full Name</Label>
             <Input type="text" placeholder="Juan dela Cruz" className={inputCls}
               value={name} onChange={e => setName(e.target.value)} required autoComplete="name" />
+          </div>
+          {/* Age + Sex row */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className={labelCls}>Age <span className="text-red-400">*</span></Label>
+              <Input
+                type="number"
+                placeholder="e.g. 25"
+                className={inputCls}
+                value={age}
+                onChange={e => setAge(e.target.value)}
+                min={1}
+                max={120}
+                required
+              />
+            </div>
+            <div>
+              <Label className={labelCls}>Sex <span className="text-red-400">*</span></Label>
+              <select
+                value={sex}
+                onChange={e => setSex(e.target.value)}
+                required
+                className={`${inputCls} w-full appearance-none`}
+                style={{ background: 'hsl(222,47%,11%)' }}
+              >
+                <option value="" disabled>Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
           </div>
           <div>
             <Label className={labelCls}>Email Address</Label>

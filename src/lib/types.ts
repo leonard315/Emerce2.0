@@ -18,6 +18,11 @@ export interface EmergencyAlert {
   id: string;
   userId: string;
   userName: string;
+  userAge?: number;
+  userSex?: string;
+  userEmail?: string;
+  userPhotoURL?: string;
+  exactAddress?: string;
   type: EmergencyType;
   color: string;
   location: {
@@ -31,6 +36,7 @@ export interface EmergencyAlert {
   responseStartTime?: any;
   resolvedTime?: any;
   aiAnalysis?: string;
+  photoEvidenceUrl?: string;
 }
 
 export interface SystemLog {

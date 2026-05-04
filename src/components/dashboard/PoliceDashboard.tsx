@@ -258,6 +258,19 @@ export function PoliceDashboard() {
                           <StatusBadge status={alert.status} />
                         </div>
 
+                        {/* Reporter details */}
+                        <div className="mb-4 p-3 rounded-xl bg-slate-800/60 border border-white/5 space-y-1.5">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Reporter Info</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <span className="text-slate-500">Name</span>
+                            <span className="text-white font-semibold">{alert.userName}</span>
+                            {(alert as any).userAge && <><span className="text-slate-500">Age</span><span className="text-white font-semibold">{(alert as any).userAge}</span></>}
+                            {(alert as any).userSex && <><span className="text-slate-500">Sex</span><span className="text-white font-semibold">{(alert as any).userSex}</span></>}
+                            {(alert as any).userEmail && <><span className="text-slate-500">Email</span><span className="text-white font-semibold truncate">{(alert as any).userEmail}</span></>}
+                            {(alert as any).exactAddress && <><span className="text-slate-500">Address</span><span className="text-white font-semibold text-[11px] leading-tight">{(alert as any).exactAddress}</span></>}
+                          </div>
+                        </div>
+
                         {alert.responderName && (
                           <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl bg-purple-500/10 border border-purple-500/20">
                             <User className="h-3.5 w-3.5 text-purple-400" />

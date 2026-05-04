@@ -254,7 +254,7 @@ export default function Home() {
 
           {/* History */}
           <Link
-            href="#"
+            href="/auth"
             className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-white/40 hover:text-white/60 transition-colors"
           >
             <ClipboardList className="h-[22px] w-[22px]" strokeWidth={1.5} />
@@ -263,7 +263,7 @@ export default function Home() {
 
           {/* Profile */}
           <Link
-            href="#"
+            href="/auth"
             className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-white/40 hover:text-white/60 transition-colors"
           >
             <User className="h-[22px] w-[22px]" strokeWidth={1.5} />

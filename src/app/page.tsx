@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   Flame,
   ShieldCheck,
-  Heart,
+  HeartPulse,
   TriangleAlert,
   Home as HomeIcon,
   Map,
@@ -15,6 +15,7 @@ import {
   User,
 } from 'lucide-react';
 import { SignInRequiredModal } from '@/components/SignInRequiredModal';
+import { OnboardingScreen, useOnboarding } from '@/components/OnboardingScreen';
 
 // ─── Emergency button data ────────────────────────────────────────────────────
 
@@ -39,9 +40,9 @@ const emergencyTypes = [
   },
   {
     id: 'medical' as const,
-    label: 'MEDICAL',
+    label: 'RESCUE & MEDICAL',
     subtitle: 'EMS',
-    icon: Heart,
+    icon: HeartPulse,
     bg: 'bg-gradient-to-br from-rose-500 to-red-700',
     shadow: 'shadow-[0_8px_40px_rgba(244,63,94,0.5)]',
     hover: 'hover:brightness-110 hover:scale-[1.03]',
@@ -72,6 +73,7 @@ export default function Home() {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'fire' | 'crime' | 'medical' | 'all' | null>(null);
+  const { show: showOnboarding, done: onboardingDone } = useOnboarding();
 
   const handleEmergencyTap = (type: 'fire' | 'police' | 'medical' | 'all') => {
     // Map 'police' to 'crime' for the modal config
@@ -87,6 +89,8 @@ export default function Home() {
 
   return (
     <div className="relative flex flex-col min-h-screen bg-[#020617] text-foreground overflow-hidden">
+      {/* Onboarding */}
+      {showOnboarding && <OnboardingScreen onDone={onboardingDone} />}
       {/* Background glows */}
       <div
         aria-hidden="true"

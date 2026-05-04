@@ -60,9 +60,23 @@ export function UserDashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'acquiring' | 'acquired' | 'denied'>('idle');
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [exactAddress, setExactAddress] = useState<string>('');
   const [mapMounted, setMapMounted] = useState(false);
   const [manualLocation, setManualLocation] = useState('');
   const [photoEvidence, setPhotoEvidence] = useState<File | null>(null);
+
+  const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      return data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    } catch {
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+  };
 
   // Load leaflet CSS on mount and set mapMounted
   useState(() => {
@@ -103,7 +117,9 @@ export function UserDashboard() {
       location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       setUserLocation([pos.coords.latitude, pos.coords.longitude]);
       setGpsStatus('acquired');
-      toast({ title: "✅ Location acquired", description: `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}` });
+      const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+      setExactAddress(address);
+      toast({ title: "✅ Location acquired", description: address.slice(0, 60) });
     } catch (e) {
       setGpsStatus('denied');
       toast({ 
@@ -179,7 +195,7 @@ export function UserDashboard() {
   const emergencyButtons = [
     { type: 'fire' as const, color: 'bg-[#f97316]', icon: Flame, title: 'FIRE', subtitle: 'Bureau of Fire Protection' },
     { type: 'crime' as const, color: 'bg-[#2563eb]', icon: Shield, title: 'POLICE', subtitle: 'Philippine National Police' },
-    { type: 'medical' as const, color: 'bg-[#dc2626]', icon: Activity, title: 'MEDICAL', subtitle: 'Emergency Medical Services' },
+    { type: 'medical' as const, color: 'bg-[#dc2626]', icon: Activity, title: 'RESCUE & MEDICAL', subtitle: 'Emergency Medical Services' },
     { type: 'all' as const, color: 'bg-[#1e293b]', icon: AlertTriangle, title: 'ALL AGENCIES', subtitle: 'BFP + PNP + EMS' },
   ];
 
@@ -272,7 +288,12 @@ export function UserDashboard() {
                       setConfirmOpen(true);
                       setGpsStatus('acquiring');
                       navigator.geolocation?.getCurrentPosition(
-                        pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); },
+                        async pos => {
+                          setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+                          setGpsStatus('acquired');
+                          const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+                          setExactAddress(address);
+                        },
                         () => setGpsStatus('denied'),
                         { timeout: 8000, enableHighAccuracy: true }
                       );
@@ -558,7 +579,12 @@ export function UserDashboard() {
                         // Start GPS acquisition immediately
                         setGpsStatus('acquiring');
                         navigator.geolocation?.getCurrentPosition(
-                          pos => { setUserLocation([pos.coords.latitude, pos.coords.longitude]); setGpsStatus('acquired'); },
+                          async pos => {
+                            setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+                            setGpsStatus('acquired');
+                            const address = await reverseGeocode(pos.coords.latitude, pos.coords.longitude);
+                            setExactAddress(address);
+                          },
                           () => setGpsStatus('denied'),
                           { timeout: 8000, enableHighAccuracy: true }
                         );
@@ -1052,13 +1078,17 @@ export function UserDashboard() {
                     {selectedType === 'all' && <AlertTriangle className="h-6 w-6 text-yellow-400" />}
                   </div>
                   <h2 className="text-lg font-black text-white uppercase tracking-widest">
-                    {selectedType === 'all' ? 'All Agencies' : selectedType} Alert
+                    {selectedType === 'all' ? 'All Agencies' : selectedType === 'medical' ? 'Rescue & Medical' : selectedType} Alert
                   </h2>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                    <MapPin className="h-3 w-3" />
-                    {gpsStatus === 'acquired' && userLocation
-                      ? `${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}`
-                      : 'Detecting location...'}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-400 text-center">
+                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    <span className="line-clamp-2">
+                      {gpsStatus === 'acquired' && exactAddress
+                        ? exactAddress
+                        : gpsStatus === 'acquired' && userLocation
+                        ? `${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}`
+                        : 'Detecting location...'}
+                    </span>
                   </div>
                 </div>
 
@@ -1066,15 +1096,15 @@ export function UserDashboard() {
                 <div className="space-y-1.5">
                   {gpsStatus === 'acquired' && userLocation ? (
                     /* GPS success — green pill */
-                    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
-                      <div className="flex items-center gap-2 text-xs text-green-400 font-semibold">
-                        <MapPin className="h-3.5 w-3.5" />
-                        GPS acquired — {userLocation[0].toFixed(4)}, {userLocation[1].toFixed(4)}
+                    <div className="flex items-start justify-between px-3 py-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <div className="flex items-start gap-2 text-xs text-green-400 font-semibold flex-1 min-w-0">
+                        <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                        <span className="line-clamp-2">{exactAddress || `${userLocation[0].toFixed(4)}, ${userLocation[1].toFixed(4)}`}</span>
                       </div>
                       <button
                         type="button"
-                        onClick={() => { setGpsStatus('denied'); setUserLocation(null); }}
-                        className="text-[10px] text-slate-400 hover:text-white font-semibold"
+                        onClick={() => { setGpsStatus('denied'); setUserLocation(null); setExactAddress(''); }}
+                        className="text-[10px] text-slate-400 hover:text-white font-semibold ml-2 flex-shrink-0"
                       >
                         Override
                       </button>
@@ -1127,12 +1157,22 @@ export function UserDashboard() {
                   </p>
                 </div>
 
-                {/* Photo evidence */}
-                <label className="flex items-center justify-center gap-2 h-10 rounded-xl border border-dashed border-white/20 text-slate-400 hover:text-white hover:border-white/40 cursor-pointer transition-colors text-sm font-semibold">
-                  <Camera className="h-4 w-4" />
-                  {photoEvidence ? photoEvidence.name : 'Add Photo Evidence (optional)'}
-                  <input type="file" accept="image/*" className="hidden" onChange={e => setPhotoEvidence(e.target.files?.[0] || null)} />
-                </label>
+                {/* Photo evidence — REQUIRED */}
+                <div className="space-y-1">
+                  <label className={cn(
+                    "flex items-center justify-center gap-2 h-12 rounded-xl border-2 cursor-pointer transition-colors text-sm font-semibold",
+                    photoEvidence
+                      ? "border-green-500/40 bg-green-500/10 text-green-400"
+                      : "border-dashed border-red-500/40 bg-red-500/5 text-red-400 hover:border-red-400/60 hover:bg-red-500/10"
+                  )}>
+                    <Camera className="h-4 w-4" />
+                    {photoEvidence ? `✓ ${photoEvidence.name.slice(0, 24)}...` : 'Add Photo Evidence (Required)'}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => setPhotoEvidence(e.target.files?.[0] || null)} />
+                  </label>
+                  {!photoEvidence && (
+                    <p className="text-[10px] text-red-400 text-center font-semibold">Photo is required to verify your report</p>
+                  )}
+                </div>
 
                 {/* Buttons */}
                 <div className="flex gap-3 pt-1">
@@ -1144,8 +1184,9 @@ export function UserDashboard() {
                   </button>
                   <button
                     onClick={() => { setConfirmOpen(false); confirmAlert(); }}
+                    disabled={!photoEvidence}
                     className={cn(
-                      "flex-1 h-12 rounded-xl font-bold text-sm text-white transition-all active:scale-95 shadow-lg",
+                      "flex-1 h-12 rounded-xl font-bold text-sm text-white transition-all active:scale-95 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed",
                       selectedType === 'fire' ? 'bg-orange-500 hover:bg-orange-400 shadow-orange-900/40' :
                       selectedType === 'police' ? 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/40' :
                       selectedType === 'medical' ? 'bg-red-600 hover:bg-red-500 shadow-red-900/40' :

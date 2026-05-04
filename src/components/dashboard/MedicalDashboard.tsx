@@ -102,6 +102,26 @@ export function MedicalDashboard() {
   const resolvedAlerts = alerts.filter(a => a.status === 'resolved');
   const activeAlerts = alerts.filter(a => a.status !== 'resolved' && a.location);
 
+  const markFalseReport = async (alert: EmergencyAlert) => {
+    if (!profile || !db) return;
+    const batch = writeBatch(db);
+    const data = { status: 'false_report' as any, falseReportBy: profile.name, falseReportTime: firestoreTimestamp() };
+    batch.update(doc(db, 'agency_alerts_medical', alert.id), data);
+    batch.update(doc(db, 'users', alert.userId, 'alerts', alert.id), data);
+    batch.update(doc(db, 'all_alerts', alert.id), data);
+    const { getDoc, updateDoc } = await import('firebase/firestore');
+    const userRef = doc(db, 'users', alert.userId);
+    const userSnap = await getDoc(userRef);
+    const violations = (userSnap.data()?.violations || 0) + 1;
+    await updateDoc(userRef, { violations });
+    await batch.commit();
+    toast({
+      variant: 'destructive',
+      title: 'Marked as False Report',
+      description: `${alert.userName} now has ${violations} violation${violations > 1 ? 's' : ''}${violations >= 3 ? ' — account flagged for suspension' : ''}.`,
+    });
+  };
+
   return (
     <SidebarProvider style={{ '--sidebar-width': '18rem' } as React.CSSProperties}>
       <AgencySidebar currentView={currentView} onViewChange={setCurrentView} />
@@ -230,7 +250,7 @@ export function MedicalDashboard() {
                         </Button>
                       )}
 
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 flex-wrap">
                         {alert.status === 'pending' && (
                           <Button onClick={() => updateStatus(alert, 'responding')}
                             className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold gap-2 shadow-lg shadow-red-900/30">
@@ -241,6 +261,13 @@ export function MedicalDashboard() {
                           <Button onClick={() => updateStatus(alert, 'resolved')}
                             className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold gap-2 shadow-lg shadow-green-900/30">
                             <CheckCircle2 className="h-4 w-4" /> Patient Stabilized
+                          </Button>
+                        )}
+                        {alert.status !== 'resolved' && alert.status !== 'false_report' as any && (
+                          <Button variant="outline" size="sm"
+                            onClick={() => markFalseReport(alert)}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300 gap-1.5 font-bold">
+                            <AlertTriangle className="h-3.5 w-3.5" /> False Report
                           </Button>
                         )}
                         {alert.location && (

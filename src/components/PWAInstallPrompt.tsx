@@ -15,69 +15,83 @@ export function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Already installed as PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Already running as installed PWA — never show
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    ) {
       setIsInstalled(true);
       return;
     }
 
-    // iOS detection
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !(window as any).MSStream;
+    // iOS Safari detection
+    const ios =
+      /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+      !(window as any).MSStream &&
+      !(window.matchMedia('(display-mode: standalone)').matches);
     setIsIOS(ios);
 
     if (ios) {
-      // Always show iOS instructions after 2s
-      const timer = setTimeout(() => setShow(true), 2000);
-      return () => clearTimeout(timer);
+      // Show iOS install instructions after 1.5s
+      const t = setTimeout(() => setShow(true), 1500);
+      return () => clearTimeout(t);
     }
 
-    // Chrome/Android — listen for beforeinstallprompt
+    // Chrome / Android — capture beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShow(true); // show immediately when event fires
+      setShow(true);
     };
-
     window.addEventListener('beforeinstallprompt', handler);
 
-    // Also check if already captured (page reload case)
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    // Listen for successful install — hide prompt
+    const installed = () => {
+      setIsInstalled(true);
+      setShow(false);
+    };
+    window.addEventListener('appinstalled', installed);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installed);
+    };
   }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setIsInstalled(true);
+    if (outcome === 'accepted') {
+      setIsInstalled(true);
+    }
     setShow(false);
     setDeferredPrompt(null);
   };
 
-  const handleDismiss = () => {
-    setShow(false);
-  };
+  const handleDismiss = () => setShow(false);
 
   if (!show || isInstalled) return null;
 
   return (
-    <div className="fixed bottom-20 xl:bottom-6 left-4 right-4 z-50 max-w-sm mx-auto animate-in slide-in-from-bottom-4 duration-300">
-      <div className="bg-[#0d1526] border border-white/10 rounded-2xl p-4 shadow-2xl shadow-black/50">
-        <div className="flex items-start gap-3">
-          {/* Icon */}
-          <div className="flex-shrink-0 h-10 w-10 rounded-xl overflow-hidden shadow-lg shadow-red-900/40">
+    <div className="fixed bottom-20 xl:bottom-6 left-4 right-4 z-[60] max-w-sm mx-auto animate-in slide-in-from-bottom-4 duration-300">
+      <div className="bg-[#0d1526] border border-white/10 rounded-2xl p-5 shadow-2xl shadow-black/60">
+        <div className="flex items-start gap-4">
+          {/* App icon */}
+          <div className="flex-shrink-0 h-12 w-12 rounded-2xl overflow-hidden shadow-lg shadow-red-900/40 border border-white/10">
             <img src="/icons/logo.png" alt="Emergency Hotline" className="w-full h-full object-cover" />
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white leading-tight">Install Emergency Hotline</p>
+            <p className="text-base font-bold text-white leading-tight">Install Emergency Hotline</p>
             {isIOS ? (
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-sm text-slate-400 mt-1 leading-relaxed">
                 Tap <span className="text-white font-semibold">Share ↑</span> then{' '}
-                <span className="text-white font-semibold">"Add to Home Screen"</span> for instant emergency access.
+                <span className="text-white font-semibold">"Add to Home Screen"</span>.
               </p>
             ) : (
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              <p className="text-sm text-slate-400 mt-1 leading-relaxed">
                 Add to your home screen for faster emergency reporting.
               </p>
             )}
@@ -85,9 +99,9 @@ export function PWAInstallPrompt() {
             {!isIOS && deferredPrompt && (
               <button
                 onClick={handleInstall}
-                className="mt-3 flex items-center gap-1.5 h-8 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors shadow-lg shadow-red-900/30"
+                className="mt-4 flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-white text-sm font-bold transition-all shadow-lg shadow-red-900/40"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-4 w-4" />
                 Install App
               </button>
             )}
@@ -95,7 +109,7 @@ export function PWAInstallPrompt() {
             {isIOS && (
               <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-500">
                 <Smartphone className="h-3.5 w-3.5" />
-                <span>iOS Safari only</span>
+                <span>Use Safari to install</span>
               </div>
             )}
           </div>
@@ -103,10 +117,10 @@ export function PWAInstallPrompt() {
           {/* Dismiss */}
           <button
             onClick={handleDismiss}
-            className="flex-shrink-0 h-7 w-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            className="flex-shrink-0 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
             aria-label="Dismiss"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>

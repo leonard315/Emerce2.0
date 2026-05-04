@@ -132,11 +132,10 @@ export function useOnboarding() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Only show onboarding if coming from a fresh open (no referrer = direct open)
-    // Don't show if navigating back from another page within the app
-    const isInternalNav = document.referrer.includes(window.location.hostname);
-    if (!isInternalNav) {
-      const t = setTimeout(() => setShow(true), 100);
+    // Don't show onboarding if navigating back from auth page
+    const fromAuth = document.referrer.includes('/auth');
+    if (!fromAuth) {
+      const t = setTimeout(() => setShow(true), 150);
       return () => clearTimeout(t);
     }
   }, []);

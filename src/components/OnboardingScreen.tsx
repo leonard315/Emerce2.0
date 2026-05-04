@@ -55,6 +55,8 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 
   const next = () => {
     if (isLast) {
+      // Mark as seen for this session so Back to Home doesn't re-show it
+      sessionStorage.setItem(ONBOARDING_KEY, '1');
       onDone();
     } else {
       setStep(s => s + 1);
@@ -62,6 +64,7 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   const skip = () => {
+    sessionStorage.setItem(ONBOARDING_KEY, '1');
     onDone();
   };
 
@@ -132,9 +135,9 @@ export function useOnboarding() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Don't show onboarding if navigating back from auth page
-    const fromAuth = document.referrer.includes('/auth');
-    if (!fromAuth) {
+    // Show onboarding only once per session (sessionStorage clears when browser/tab is closed)
+    const seen = sessionStorage.getItem(ONBOARDING_KEY);
+    if (!seen) {
       const t = setTimeout(() => setShow(true), 150);
       return () => clearTimeout(t);
     }

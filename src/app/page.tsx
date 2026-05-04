@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,15 @@ import {
   Map,
   ClipboardList,
   User,
+  Download,
 } from 'lucide-react';
 import { SignInRequiredModal } from '@/components/SignInRequiredModal';
 import { OnboardingScreen, useOnboarding } from '@/components/OnboardingScreen';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
 
 // ─── Emergency button data ────────────────────────────────────────────────────
 
@@ -74,6 +80,28 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<'fire' | 'crime' | 'medical' | 'all' | null>(null);
   const { show: showOnboarding, done: onboardingDone } = useOnboarding();
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    await installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setIsInstalled(true);
+    setInstallPrompt(null);
+  };
 
   const handleEmergencyTap = (type: 'fire' | 'police' | 'medical' | 'all') => {
     // Map 'police' to 'crime' for the modal config
@@ -121,6 +149,16 @@ export default function Home() {
 
         {/* Auth actions */}
         <nav className="flex items-center gap-2 flex-shrink-0">
+          {installPrompt && !isInstalled && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleInstall}
+              className="h-9 px-3 text-xs font-semibold border-white/20 hover:border-white/40 hover:bg-white/5 gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" /> Install
+            </Button>
+          )}
           <Link href="/auth">
             <Button
               variant="outline"
@@ -230,7 +268,7 @@ export default function Home() {
 
           {/* Map */}
           <Link
-            href="/map"
+            href="/auth"
             className="flex flex-col items-center justify-center gap-1 flex-1 h-full text-white/40 hover:text-white/60 transition-colors"
           >
             <Map className="h-[22px] w-[22px]" strokeWidth={1.5} />

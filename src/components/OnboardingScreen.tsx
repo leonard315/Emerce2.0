@@ -129,7 +129,13 @@ export function OnboardingScreen({ onDone }: { onDone: () => void }) {
 }
 
 export function useOnboarding() {
-  const [show, setShow] = useState(true); // always show on open
+  const [show, setShow] = useState(false); // start false, set true after mount
+
+  useEffect(() => {
+    // Small delay so the page renders first before showing onboarding
+    const t = setTimeout(() => setShow(true), 100);
+    return () => clearTimeout(t);
+  }, []);
 
   return { show, done: () => setShow(false) };
 }

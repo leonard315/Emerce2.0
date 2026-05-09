@@ -59,7 +59,7 @@ const markerColors: Record<string, string> = {
 export function LiveMapView() {
   const db = useFirestore();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, profile } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [mapStyle, setMapStyle] = useState<MapStyle>('street');
@@ -106,10 +106,19 @@ export function LiveMapView() {
   };
 
   // Realtime Firestore listener via useCollection
+  // Agency users only see their own alerts; admin/user see all
   const alertsQuery = useMemoFirebase(() => {
     if (!db) return null;
-    return query(collection(db, 'all_alerts'), orderBy('timestamp', 'desc'), limit(200));
-  }, [db]);
+    const roleCollectionMap: Record<string, string> = {
+      fire: 'agency_alerts_fire',
+      police: 'agency_alerts_police',
+      medical: 'agency_alerts_medical',
+    };
+    const col = profile?.role && roleCollectionMap[profile.role]
+      ? roleCollectionMap[profile.role]
+      : 'all_alerts';
+    return query(collection(db, col), orderBy('timestamp', 'desc'), limit(200));
+  }, [db, profile?.role]);
 
   const { data: allAlertsData } = useCollection<EmergencyAlert>(alertsQuery);
   const allAlerts = allAlertsData || [];

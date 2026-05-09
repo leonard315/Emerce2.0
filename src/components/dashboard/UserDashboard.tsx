@@ -130,7 +130,7 @@ export function UserDashboard() {
     }
 
     const alertId = doc(collection(db, 'temp')).id;
-    const alertData = {
+    const baseAlertData = {
       id: alertId,
       userId: profile.uid,
       userName: profile.name,
@@ -139,7 +139,6 @@ export function UserDashboard() {
       userEmail: profile.email ?? null,
       userPhotoURL: profile.photoURL ?? null,
       exactAddress: exactAddress || null,
-      type: selectedType === 'all' ? 'medical' : selectedType,
       color: selectedType === 'fire' ? 'orange' : selectedType === 'crime' ? 'blue' : 'red',
       location,
       status: 'pending' as const,
@@ -147,20 +146,30 @@ export function UserDashboard() {
     };
 
     const batch = writeBatch(db);
-    batch.set(doc(db, 'users', profile.uid, 'alerts', alertId), alertData);
-    
+
     if (selectedType === 'all') {
-      batch.set(doc(db, 'agency_alerts_fire', alertId), alertData);
-      batch.set(doc(db, 'agency_alerts_police', alertId), alertData);
-      batch.set(doc(db, 'agency_alerts_medical', alertId), alertData);
+      // Send to all three agencies with their correct type
+      const fireData = { ...baseAlertData, type: 'fire' as const, color: 'orange' };
+      const policeData = { ...baseAlertData, type: 'crime' as const, color: 'blue' };
+      const medicalData = { ...baseAlertData, type: 'medical' as const, color: 'red' };
+      batch.set(doc(db, 'users', profile.uid, 'alerts', alertId), fireData);
+      batch.set(doc(db, 'agency_alerts_fire', alertId), fireData);
+      batch.set(doc(db, 'agency_alerts_police', alertId), policeData);
+      batch.set(doc(db, 'agency_alerts_medical', alertId), medicalData);
+      batch.set(doc(db, 'all_alerts', alertId), { ...fireData, type: 'fire' });
     } else {
-      const agencyCollection = selectedType === 'fire' ? 'agency_alerts_fire' : 
-                            selectedType === 'crime' ? 'agency_alerts_police' : 
-                            'agency_alerts_medical';
+      const alertData = {
+        ...baseAlertData,
+        type: selectedType,
+        color: selectedType === 'fire' ? 'orange' : selectedType === 'crime' ? 'blue' : 'red',
+      };
+      batch.set(doc(db, 'users', profile.uid, 'alerts', alertId), alertData);
+      const agencyCollection = selectedType === 'fire' ? 'agency_alerts_fire' :
+        selectedType === 'crime' ? 'agency_alerts_police' :
+        'agency_alerts_medical';
       batch.set(doc(db, agencyCollection, alertId), alertData);
+      batch.set(doc(db, 'all_alerts', alertId), alertData);
     }
-    
-    batch.set(doc(db, 'all_alerts', alertId), alertData);
     
     await batch.commit();
 

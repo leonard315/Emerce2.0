@@ -8,7 +8,7 @@ import { EmergencyAlert } from '@/lib/types';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/hooks/use-toast";
-import { HeartPulse, CheckCircle2, Navigation, MapPin, Zap, BrainCircuit, Radio, Clock, User, ChevronRight } from 'lucide-react';
+import { HeartPulse, CheckCircle2, Navigation, MapPin, Zap, BrainCircuit, Radio, Clock, User, ChevronRight, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { analyzeSituation } from '@/ai/flows/analyze-situation-flow';
 import { cn } from '@/lib/utils';

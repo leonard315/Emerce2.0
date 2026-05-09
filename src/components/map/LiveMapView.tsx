@@ -247,6 +247,7 @@ export function LiveMapView() {
 
         {/* Map */}
         <div className="flex-1 relative">
+          {mounted ? (
           <MapContainer
             center={defaultCenter}
             zoom={userLocation ? 13 : 7}
@@ -343,6 +344,11 @@ export function LiveMapView() {
               );
             })}
           </MapContainer>
+          ) : (
+            <div className="h-full bg-[#0d1526] flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full border-2 border-blue-400/30 border-t-blue-400 animate-spin" />
+            </div>
+          )}
 
           {/* Map Style Switcher */}
           <div className="absolute bottom-4 left-4 z-[1000] flex gap-2 bg-[#020617]/80 backdrop-blur-sm p-1.5 rounded-xl border border-white/10">

@@ -183,6 +183,7 @@ export function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [savingRole, setSavingRole] = useState(false);
+  const [togglingDeactivate, setTogglingDeactivate] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
   const { toast } = useToast();
 
@@ -244,6 +245,25 @@ export function AdminDashboard() {
       toast({ variant: 'destructive', title: 'Update failed', description: e.message });
     } finally {
       setSavingRole(false);
+    }
+  };
+
+  const handleToggleDeactivate = async () => {
+    if (!selectedUser || !db) return;
+    setTogglingDeactivate(true);
+    try {
+      const newState = !selectedUser.deactivated;
+      await setDoc(doc(db, 'users', selectedUser.uid), { deactivated: newState }, { merge: true });
+      setSelectedUser(prev => prev ? { ...prev, deactivated: newState } : null);
+      toast({
+        variant: newState ? 'destructive' : 'default',
+        title: newState ? `Account deactivated` : `Account reactivated`,
+        description: `${selectedUser.name}'s account has been ${newState ? 'deactivated' : 'reactivated'}.`,
+      });
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'Failed', description: e.message });
+    } finally {
+      setTogglingDeactivate(false);
     }
   };
 
@@ -611,18 +631,24 @@ export function AdminDashboard() {
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest px-6">Name</TableHead>
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest">Email</TableHead>
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest">Role</TableHead>
+                      <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest">Violations</TableHead>
                       <TableHead className="text-xs font-bold text-slate-500 uppercase tracking-widest text-right px-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map((user) => (
-                      <TableRow key={user.uid} className="border-white/5 hover:bg-white/5">
+                      <TableRow key={user.uid} className={cn("border-white/5 hover:bg-white/5", user.deactivated && "opacity-50")}>
                         <TableCell className="px-6 py-3">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-xl bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
                               {user.name.charAt(0).toUpperCase()}
                             </div>
-                            <span className="text-sm font-bold text-white">{user.name}</span>
+                            <div>
+                              <span className="text-sm font-bold text-white">{user.name}</span>
+                              {user.deactivated && (
+                                <Badge className="ml-2 bg-red-500/15 text-red-400 border-none text-[9px] font-bold">DEACTIVATED</Badge>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-slate-400 text-sm">{user.email}</TableCell>
@@ -637,6 +663,17 @@ export function AdminDashboard() {
                           )}>
                             {user.role}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className={cn(
+                            "text-sm font-black",
+                            (user.violations || 0) >= 3 ? 'text-red-400' :
+                            (user.violations || 0) >= 1 ? 'text-yellow-400' :
+                            'text-slate-500'
+                          )}>
+                            {user.violations || 0}
+                            {(user.violations || 0) >= 3 && <span className="text-[10px] font-bold ml-1 text-red-400">⚠ MAX</span>}
+                          </span>
                         </TableCell>
                         <TableCell className="text-right px-6">
                           <Button variant="ghost" size="sm" className="text-xs text-slate-400 hover:text-white h-7"
@@ -829,6 +866,50 @@ export function AdminDashboard() {
                   </span>
                 </div>
               )}
+
+              {/* Violations */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">False Report Violations</span>
+                <span className={cn(
+                  "font-black text-sm",
+                  (selectedUser.violations || 0) >= 3 ? 'text-red-400' :
+                  (selectedUser.violations || 0) >= 1 ? 'text-yellow-400' :
+                  'text-slate-400'
+                )}>
+                  {selectedUser.violations || 0} / 3
+                  {(selectedUser.violations || 0) >= 3 && <span className="ml-1 text-[10px]">⚠ Threshold reached</span>}
+                </span>
+              </div>
+
+              {/* Account status */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-500">Account Status</span>
+                <Badge className={cn(
+                  "text-[10px] font-bold border-none",
+                  selectedUser.deactivated ? 'bg-red-500/15 text-red-400' : 'bg-green-500/15 text-green-400'
+                )}>
+                  {selectedUser.deactivated ? 'DEACTIVATED' : 'ACTIVE'}
+                </Badge>
+              </div>
+
+              {/* Deactivate / Reactivate button */}
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full h-10 rounded-xl font-bold text-sm border",
+                  selectedUser.deactivated
+                    ? "border-green-500/30 text-green-400 hover:bg-green-500/10"
+                    : "border-red-500/30 text-red-400 hover:bg-red-500/10"
+                )}
+                onClick={handleToggleDeactivate}
+                disabled={togglingDeactivate}
+              >
+                {togglingDeactivate
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : selectedUser.deactivated
+                  ? '✓ Reactivate Account'
+                  : '⊘ Deactivate Account'}
+              </Button>
             </div>
           )}
           <DialogFooter className="px-6 pb-6 flex gap-3">

@@ -138,6 +138,19 @@ export function UserDashboard() {
 
   const confirmAlert = async () => {
     if (!selectedType || !profile || !db) return;
+
+    // Block deactivated accounts
+    if ((profile as any).deactivated) {
+      toast({
+        variant: 'destructive',
+        title: 'Account Deactivated',
+        description: 'Your account has been deactivated due to false report violations. Contact admin for support.',
+      });
+      setConfirmOpen(false);
+      setSelectedType(null);
+      return;
+    }
+
     setIsSubmitting(true);
     setConfirmOpen(false);
     setGpsStatus('acquiring');

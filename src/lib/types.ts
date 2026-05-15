@@ -9,6 +9,8 @@ export interface UserProfile {
   photoURL?: string;
   age?: number;
   sex?: string;
+  violations?: number;
+  deactivated?: boolean;
 }
 
 export type EmergencyType = 'fire' | 'crime' | 'medical';

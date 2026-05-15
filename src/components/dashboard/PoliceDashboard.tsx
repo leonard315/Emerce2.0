@@ -138,12 +138,16 @@ export function PoliceDashboard() {
     batch.update(doc(db, 'agency_alerts_police', alert.id), data);
     batch.update(doc(db, 'users', alert.userId, 'alerts', alert.id), data);
     batch.update(doc(db, 'all_alerts', alert.id), data);
-    batch.update(userRef, { violations: increment(1) });
+    const userUpdate: Record<string, any> = { violations: increment(1) };
+    if (violations >= 3) userUpdate.deactivated = true;
+    batch.update(userRef, userUpdate);
     await batch.commit();
     toast({
       variant: 'destructive',
       title: 'Marked as False Report',
-      description: `${alert.userName} now has ${violations} violation${violations > 1 ? 's' : ''}${violations >= 3 ? ' — account flagged for suspension' : ''}.`,
+      description: violations >= 3
+        ? `${alert.userName} has reached 3 violations — account automatically deactivated.`
+        : `${alert.userName} now has ${violations} violation${violations > 1 ? 's' : ''}.`,
     });
   };
 

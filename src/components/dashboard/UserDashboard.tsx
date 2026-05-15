@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { collection, doc, setDoc, writeBatch, query, orderBy, serverTimestamp as firestoreTimestamp } from 'firebase/firestore';
 import { ref, push, serverTimestamp as rtdbTimestamp } from 'firebase/database';
 import { useFirestore, useCollection, useDatabase, useMemoFirebase } from '@/firebase';
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Flame, Shield, Activity, AlertTriangle, Star, Zap, Info, Radio, Menu, MapPin, Clock, Loader2, Navigation, ClipboardList, Camera } from 'lucide-react';
+import { Flame, Shield, Activity, AlertTriangle, Star, Zap, Info, Radio, Menu, MapPin, Clock, Loader2, Navigation, ClipboardList, Camera, Mic, MicOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -64,6 +64,40 @@ export function UserDashboard() {
   const [mapMounted, setMapMounted] = useState(false);
   const [manualLocation, setManualLocation] = useState('');
   const [photoEvidence, setPhotoEvidence] = useState<File | null>(null);
+
+  // ── Voice message recording ────────────────────────────────────────────────
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      mr.ondataavailable = e => chunks.push(e.data);
+      mr.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setVoiceBlob(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      mediaRecorderRef.current = mr;
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
+    } catch {
+      toast({ variant: 'destructive', title: 'Microphone access denied', description: 'Please allow microphone access to record a voice message.' });
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  };
 
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
@@ -129,6 +163,21 @@ export function UserDashboard() {
       });
     }
 
+    // Convert voice blob to base64 if present
+    let voiceMessageUrl: string | null = null;
+    if (voiceBlob) {
+      try {
+        voiceMessageUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(voiceBlob);
+        });
+      } catch {
+        // Voice encoding failed — proceed without it
+      }
+    }
+
     const alertId = doc(collection(db, 'temp')).id;
     const baseAlertData = {
       id: alertId,
@@ -143,6 +192,7 @@ export function UserDashboard() {
       location,
       status: 'pending' as const,
       timestamp: firestoreTimestamp(),
+      ...(voiceMessageUrl ? { voiceMessageUrl } : {}),
     };
 
     const batch = writeBatch(db);
@@ -184,6 +234,8 @@ export function UserDashboard() {
     toast({ title: "SIGNAL TRANSMITTED", description: "Emergency units have been notified." });
     setIsSubmitting(false);
     setSelectedType(null);
+    setVoiceBlob(null);
+    setRecordingSeconds(0);
   };
 
   const submitFeedback = async () => {
@@ -1049,7 +1101,7 @@ export function UserDashboard() {
           )}
 
           {/* ── Step 1: Alert Detail Dialog ──────────────────────────────── */}
-          <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!open) { setConfirmOpen(false); setSelectedType(null); setManualLocation(''); setPhotoEvidence(null); } }}>
+          <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!open) { setConfirmOpen(false); setSelectedType(null); setManualLocation(''); setPhotoEvidence(null); setVoiceBlob(null); setRecordingSeconds(0); if (isRecording) stopRecording(); } }}>
             <AlertDialogContent className="bg-[#0d1526] border border-white/10 rounded-3xl p-0 max-w-sm w-full overflow-hidden shadow-2xl">
               <AlertDialogHeader className="sr-only">
                 <AlertDialogTitle>Report Emergency</AlertDialogTitle>
@@ -1185,6 +1237,52 @@ export function UserDashboard() {
                   </label>
                   {!photoEvidence && (
                     <p className="text-[10px] text-red-400 text-center font-semibold">Photo is required to verify your report</p>
+                  )}
+                </div>
+
+                {/* Voice message — optional */}
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Voice Message (Optional)</p>
+                  {!voiceBlob ? (
+                    <button
+                      type="button"
+                      onClick={isRecording ? stopRecording : startRecording}
+                      className={cn(
+                        "w-full h-12 rounded-xl border-2 flex items-center justify-center gap-2 text-sm font-semibold transition-all",
+                        isRecording
+                          ? "border-red-500/60 bg-red-500/15 text-red-400 animate-pulse"
+                          : "border-dashed border-slate-600 bg-slate-800/40 text-slate-400 hover:border-slate-500 hover:text-white"
+                      )}
+                    >
+                      {isRecording ? (
+                        <>
+                          <MicOff className="h-4 w-4" />
+                          Stop Recording ({recordingSeconds}s)
+                        </>
+                      ) : (
+                        <>
+                          <Mic className="h-4 w-4" />
+                          Record Voice Message
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <Mic className="h-4 w-4 text-green-400 flex-shrink-0" />
+                      <audio
+                        src={URL.createObjectURL(voiceBlob)}
+                        controls
+                        className="flex-1 h-8"
+                        style={{ filter: 'invert(1) hue-rotate(180deg)', maxWidth: '100%' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setVoiceBlob(null); setRecordingSeconds(0); }}
+                        className="text-[10px] text-slate-400 hover:text-red-400 font-semibold flex-shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   )}
                 </div>
 

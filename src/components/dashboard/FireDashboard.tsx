@@ -131,17 +131,16 @@ export function FireDashboard() {
 
   const markFalseReport = async (alert: EmergencyAlert) => {
     if (!profile || !db) return;
+    const { getDoc, increment } = await import('firebase/firestore');
+    const userRef = doc(db, 'users', alert.userId);
+    const userSnap = await getDoc(userRef);
+    const violations = (userSnap.data()?.violations || 0) + 1;
     const batch = writeBatch(db);
     const data = { status: 'false_report' as any, falseReportBy: profile.name, falseReportTime: firestoreTimestamp() };
     batch.update(doc(db, 'agency_alerts_fire', alert.id), data);
     batch.update(doc(db, 'users', alert.userId, 'alerts', alert.id), data);
     batch.update(doc(db, 'all_alerts', alert.id), data);
-    // Increment violation count on the user
-    const userRef = doc(db, 'users', alert.userId);
-    const { getDoc, updateDoc, increment } = await import('firebase/firestore');
-    const userSnap = await getDoc(userRef);
-    const violations = (userSnap.data()?.violations || 0) + 1;
-    await updateDoc(userRef, { violations });
+    batch.update(userRef, { violations: increment(1) });
     await batch.commit();
     toast({
       variant: 'destructive',
@@ -288,6 +287,16 @@ export function FireDashboard() {
                         {/* Reporter details */}
                         <div className="mb-4 p-3 rounded-xl bg-slate-800/60 border border-white/5 space-y-1.5">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Reporter Info</p>
+                          {alert.userPhotoURL && (
+                            <div className="flex items-center gap-3 mb-3">
+                              <img
+                                src={alert.userPhotoURL}
+                                alt={alert.userName}
+                                className="h-12 w-12 rounded-xl object-cover border border-white/10 flex-shrink-0"
+                              />
+                              <span className="text-sm font-black text-white">{alert.userName}</span>
+                            </div>
+                          )}
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                             <span className="text-slate-500">Name</span>
                             <span className="text-white font-semibold">{alert.userName}</span>
@@ -309,6 +318,14 @@ export function FireDashboard() {
                             </>}
                           </div>
                         </div>
+
+                        {/* Voice message */}
+                        {(alert as any).voiceMessageUrl && (
+                          <div className="mb-4 p-3 rounded-xl bg-slate-800/60 border border-white/5">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Voice Message</p>
+                            <audio src={(alert as any).voiceMessageUrl} controls className="w-full h-8" />
+                          </div>
+                        )}
 
                         {/* Responder info */}
                         {alert.responderName && (

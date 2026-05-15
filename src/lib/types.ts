@@ -37,6 +37,9 @@ export interface EmergencyAlert {
   resolvedTime?: any;
   aiAnalysis?: string;
   photoEvidenceUrl?: string;
+  voiceMessageUrl?: string;
+  falseReportBy?: string;
+  falseReportTime?: any;
 }
 
 export interface SystemLog {
